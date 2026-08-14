@@ -33,6 +33,7 @@
     --c2026: #eb6834;
     --shared: #b5299b;
     --casing: #fbfdff;
+    --map-casing: #fbfdff;
     --surfp: #4a3aa7;
     --surfu: #eda100;
     --surfx: #727c89;
@@ -53,6 +54,7 @@
       --c2026: #d95926;
       --shared: #b5299b;
       --casing: #181c21;
+      --map-casing: #fbfdff;
       --surfp: #9085e9;
       --surfu: #eda100;
       --surfx: #8a939e;
@@ -186,8 +188,8 @@
   .pt-pop .r { color: var(--text-secondary); }
   .pt-pop .r b { color: var(--text-primary); font-weight: 600; font-variant-numeric: tabular-nums; }
   .lm-label {
-    background: none; border: none; box-shadow: none; color: var(--text-primary);
-    font-size: 11px; font-weight: 600; text-shadow: 0 0 3px var(--casing), 0 0 3px var(--casing), 0 0 3px var(--casing);
+    background: none; border: none; box-shadow: none; color: #12161c;
+    font-size: 11px; font-weight: 600; text-shadow: 0 0 3px #fbfdff, 0 0 3px #fbfdff, 0 0 3px #fbfdff;
     padding: 0 3px;
   }
   .lm-label::before { display: none; }
@@ -445,15 +447,17 @@ let baseMode = "map"; // map | satellite
 const mapEl = document.getElementById("map");
 function setTiles() {
   if (tiles) map.removeLayer(tiles);
-  const dark = darkMq.matches;
   // esri imagery is used because it serves this area up to zoom 18.
   // the usgs public domain layer stops at 16 here, which the zone zoom would overrun.
+  // voyager is carto's street style: roads, parks and water in restrained colour, closer to a
+  // general purpose map than the near-white light_all or the near-black dark_all it replaces.
+  // it does not follow the page theme, so the map overlays above use fixed colours too.
   tiles = baseMode === "satellite"
     ? L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
         attribution: 'Imagery &copy; <a href="https://www.esri.com/">Esri</a>, Maxar, Earthstar Geographics',
         maxZoom: 18,
       })
-    : L.tileLayer(`https://{s}.basemaps.cartocdn.com/${dark ? "dark_all" : "light_all"}/{z}/{x}/{y}{r}.png`, {
+    : L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
         maxZoom: 18,
       });
@@ -482,7 +486,7 @@ function bearingDeg(p, q) {
 function arrowMarker(t, i, iPrev, iNext, color) {
   const deg = bearingDeg(t.pts[iPrev], t.pts[iNext]).toFixed(1);
   const arrow = `<svg width="16" height="16" viewBox="-8 -8 16 16" style="transform:rotate(${deg}deg);display:block">
-      <path d="M-3.5,3.5 L0,-3.5 L3.5,3.5" fill="none" stroke="${css("--casing")}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M-3.5,3.5 L0,-3.5 L3.5,3.5" fill="none" stroke="${css("--map-casing")}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
       <path d="M-3.5,3.5 L0,-3.5 L3.5,3.5" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>`;
   return L.marker([t.pts[i][0], t.pts[i][1]], {
@@ -548,7 +552,7 @@ function rebuild() {
     const segs = DATA.surface26.segs.filter(s => legFilter === "all" || s.leg === legFilter);
     for (const s of segs)
       courseLayer.addLayer(L.polyline(T[2026].pts.slice(s.a, s.b + 1).map(p => [p[0], p[1]]),
-        {renderer: lineRenderer, color: css("--casing"), weight: 7, opacity: 0.9, interactive: false, dashArray: dash(s)}));
+        {renderer: lineRenderer, color: css("--map-casing"), weight: 7, opacity: 0.9, interactive: false, dashArray: dash(s)}));
     for (const s of segs)
       courseLayer.addLayer(surfLine(s, dash(s)));
     for (const s of segs)
@@ -564,7 +568,7 @@ function rebuild() {
   for (const [year, segs] of divDraw)
     for (const s of segs)
       courseLayer.addLayer(L.polyline(T[year].pts.slice(s.a, s.b + 1).map(p => [p[0], p[1]]),
-        {renderer: lineRenderer, color: css("--casing"), weight: 7, opacity: 0.9, interactive: false, dashArray: dash(s)}));
+        {renderer: lineRenderer, color: css("--map-casing"), weight: 7, opacity: 0.9, interactive: false, dashArray: dash(s)}));
   for (const [year, segs] of divDraw)
     for (const s of segs)
       courseLayer.addLayer(segLine(year, s, {color: css(year === 2025 ? "--c2025" : "--c2026"), weight: 4, opacity: 1, dashArray: dash(s)}));
@@ -582,7 +586,7 @@ function rebuild() {
     if (lm.name === "Start / Finish") { addStartFinish(lm); continue; }
     const dir = LM_DIR[lm.name] || "right";
     courseLayer.addLayer(
-      L.circleMarker(lm.ll, {radius: 4, color: css("--casing"), weight: 1.5, fillColor: css("--muted"), fillOpacity: 1})
+      L.circleMarker(lm.ll, {radius: 4, color: css("--map-casing"), weight: 1.5, fillColor: css("--muted"), fillOpacity: 1})
         .bindTooltip(lm.name, {permanent: true, direction: dir, offset: dir === "right" ? [6, 0] : dir === "left" ? [-6, 0] : [0, dir === "top" ? -4 : 4], className: "lm-label"}));
   }
   // 5: 2026 aid stations
@@ -596,7 +600,7 @@ function rebuild() {
              `${mileW()} <b>${fmtD(v.mile)}${v.approx ? "~" : ""}</b>` +
              (v.cutoff ? ` · cutoff <b>${v.cutoff}</b>` : " · no cutoff") + ` · ${crew}</div>`;
     }).join("");
-    const marker = L.circleMarker(st.ll, {radius: 6, color: css("--casing"), weight: 2, fillColor: css("--c2026"), fillOpacity: 1})
+    const marker = L.circleMarker(st.ll, {radius: 6, color: css("--map-casing"), weight: 2, fillColor: css("--c2026"), fillOpacity: 1})
       .bindTooltip(st.name, {permanent: true, direction: dir, offset: dir === "right" ? [7, 0] : dir === "left" ? [-7, 0] : [0, dir === "top" ? -5 : 5], className: "lm-label lm-aid"})
       .bindPopup(`<div class="pt-pop"><div class="h">${st.name} — 2026 aid station</div>${visits}` +
         `<div class="r">Elevation <b>${fmtE(stEle)} ${eU()}</b> · drop bags: <b>${st.drop === true ? "yes" : st.drop === false ? "no" : "unconfirmed"}</b></div></div>`, {maxWidth: 340, autoPan: false, closeButton: false});
@@ -608,8 +612,8 @@ function rebuild() {
 // prominent checkered-flag marker at the start/finish in Leadville
 function addStartFinish(lm) {
   const flag = `<svg width="26" height="27" viewBox="0 0 26 27" style="display:block">
-      <line x1="5" y1="3" x2="5" y2="24" stroke="${css("--casing")}" stroke-width="6.5" stroke-linecap="round"/>
-      <rect x="5" y="3" width="17" height="10.5" fill="#fff" stroke="${css("--casing")}" stroke-width="3"/>
+      <line x1="5" y1="3" x2="5" y2="24" stroke="${css("--map-casing")}" stroke-width="6.5" stroke-linecap="round"/>
+      <rect x="5" y="3" width="17" height="10.5" fill="#fff" stroke="${css("--map-casing")}" stroke-width="3"/>
       <line x1="5" y1="3" x2="5" y2="24" stroke="${css("--text-primary")}" stroke-width="2.5" stroke-linecap="round"/>
       <rect x="5" y="3" width="17" height="10.5" fill="#fff"/>
       <rect x="5" y="3" width="4.25" height="5.25" fill="#111"/>
