@@ -31,7 +31,7 @@
     --border: rgba(11,13,16,0.10);
     --c2025: #2a78d6;
     --c2026: #eb6834;
-    --shared: #188a4e;
+    --shared: #b5299b;
     --casing: #fbfdff;
     --surfp: #4a3aa7;
     --surfu: #eda100;
@@ -51,7 +51,7 @@
       --border: rgba(255,255,255,0.10);
       --c2025: #3987e5;
       --c2026: #d95926;
-      --shared: #2ea963;
+      --shared: #b5299b;
       --casing: #181c21;
       --surfp: #9085e9;
       --surfu: #eda100;
@@ -114,7 +114,7 @@
   .swatch { width: 20px; height: 0; border-top: 4px solid; border-radius: 2px; flex: none; }
   .sw25 { border-color: var(--c2025); } .sw26 { border-color: var(--c2026); }
   .swp { border-color: var(--surfp); } .swu { border-color: var(--surfu); } .swx { border-color: var(--surfx); }
-  .swsh { border-color: var(--shared); border-top-width: 3px; opacity: 0.75; }
+  .swsh { border-color: var(--shared); border-top-width: 3px; }
   .swout { border-color: var(--text-secondary); border-top-width: 3px; }
   .swin { border-color: var(--text-secondary); border-top-width: 3px; border-top-style: dashed; }
   .legend .note { color: var(--muted); font-size: 12px; padding-top: 6px; }
@@ -543,7 +543,7 @@ function rebuild() {
   // 1: shared lines (under)
   for (const year of [2026, 2025])
     for (const s of drawnSegs(year).filter(s => !s.div))
-      courseLayer.addLayer(segLine(year, s, {color: css("--shared"), weight: 3, opacity: 0.65, dashArray: dash(s)}));
+      courseLayer.addLayer(segLine(year, s, {color: css("--shared"), weight: 3, opacity: 1, dashArray: dash(s)}));
   // 2: casings, then divergent lines
   const divDraw = [[2025, drawnSegs(2025)], [2026, drawnSegs(2026).filter(s => s.div)]];
   for (const [year, segs] of divDraw)
