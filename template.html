@@ -279,8 +279,13 @@
         <div class="chart-head">
           <h2>2026 aid stations — leg by leg</h2>
           <span class="lg">miles &amp; cutoffs from the official chart · distance, gain and loss measured from the route GPX</span>
+          <span class="mini-pills" id="eleAidPills" title="Which elevation source the gain, loss and elevation columns use. Segment boundaries are identical either way, so only those three columns change.">
+            <button data-ele="official" class="on">Official</button>
+            <button data-ele="measured">Measured</button>
+          </span>
         </div>
         <div class="aid-wrap"><table class="aid-table" id="aidTable"></table></div>
+        <div class="tile-note" id="aidNote" style="padding: 0 14px 10px;"></div>
       </div>
     </div>
   </div>
@@ -353,6 +358,7 @@ document.getElementById("tiles").innerHTML = `
 let eleMode = "official"; // official | measured
 const elePillsEl = document.getElementById("elePills");
 const eleChartPillsEl = document.getElementById("eleChartPills");
+const eleAidPillsEl = document.getElementById("eleAidPills");
 const eleValsEl = document.getElementById("eleVals");
 const eleNoteEl = document.getElementById("eleNote");
 
@@ -367,11 +373,11 @@ function renderEle() {
        <b>not directly comparable</b>.`
     : `Both years barometric, from the 2025 race recording (covers ${ELEV.measured.coverage_pct}% of the
        2026 course). Comparable: 2026 climbs <b>${fmt0(Math.abs(diff))} ft ${diff > 0 ? "more" : "less"}</b>.`;
-  for (const el of [elePillsEl, eleChartPillsEl])
+  for (const el of [elePillsEl, eleChartPillsEl, eleAidPillsEl])
     for (const b of el.querySelectorAll("button")) b.classList.toggle("on", b.dataset.ele === eleMode);
 }
 // onEleChange is a hoisted declaration further down, after the profile series exist.
-for (const el of [elePillsEl, eleChartPillsEl]) {
+for (const el of [elePillsEl, eleChartPillsEl, eleAidPillsEl]) {
   el.addEventListener("click", e => {
     const b = e.target.closest("button");
     if (b && b.dataset.ele !== eleMode) { eleMode = b.dataset.ele; onEleChange(); }
@@ -526,7 +532,9 @@ function rebuild() {
         .bindTooltip(lm.name, {permanent: true, direction: dir, offset: dir === "right" ? [6, 0] : dir === "left" ? [-6, 0] : [0, dir === "top" ? -4 : 4], className: "lm-label"}));
   }
   // 5: 2026 aid stations
-  for (const st of DATA.aid.stations) {
+  for (const [si, st] of DATA.aid.stations.entries()) {
+    // popup elevation follows the same toggle as the tile, chart and table.
+    const stEle = eleMode === "measured" ? ELEV.measured.aid.stations[si].ele : st.ele;
     const dir = LM_DIR[st.name] || "right";
     const visits = st.visits.map(v => {
       const crew = v.crew === true ? "crew access" : v.crew === false ? "no crew" : "crew " + v.crew;
@@ -537,7 +545,7 @@ function rebuild() {
     const marker = L.circleMarker(st.ll, {radius: 6, color: css("--casing"), weight: 2, fillColor: css("--c2026"), fillOpacity: 1})
       .bindTooltip(st.name, {permanent: true, direction: dir, offset: dir === "right" ? [7, 0] : dir === "left" ? [-7, 0] : [0, dir === "top" ? -5 : 5], className: "lm-label lm-aid"})
       .bindPopup(`<div class="pt-pop"><div class="h">${st.name} — 2026 aid station</div>${visits}` +
-        `<div class="r">Elevation <b>${fmt0(st.ele)} ft</b> · drop bags: <b>${st.drop === true ? "yes" : st.drop === false ? "no" : "unconfirmed"}</b></div></div>`, {maxWidth: 340, autoPan: false, closeButton: false});
+        `<div class="r">Elevation <b>${fmt0(stEle)} ft</b> · drop bags: <b>${st.drop === true ? "yes" : st.drop === false ? "no" : "unconfirmed"}</b></div></div>`, {maxWidth: 340, autoPan: false, closeButton: false});
     marker.on("mouseover", () => marker.openPopup());
     marker.on("mouseout", () => marker.closePopup());
     courseLayer.addLayer(marker);
@@ -675,8 +683,12 @@ const g2 = document.createElement("div"); g2.className = "zgroup"; g2.textConten
 zonesEl.append(g1, ...out.map(zoneRow), g2, ...back.map(zoneRow));
 
 // ---------- aid-station table ----------
-(function buildAidTable() {
-  const rows = DATA.aid.segments.map(s => {
+// gain, loss and ele follow the elevation toggle. everything else is chart data and never moves.
+// the measured segments use the same boundaries, so only these three columns change.
+function buildAidTable() {
+  const alt = eleMode === "measured" ? ELEV.measured.aid.segments : null;
+  const rows = DATA.aid.segments.map((s, i) => {
+    const ele = alt ? alt[i] : s;
     const legTag = s.leg === "turn" ? "turnaround" : s.leg === "out" ? "outbound" : s.leg === "in" ? "return" : "finish";
     const crew = s.crew === true ? '<span class="yes">✓</span>' :
                  s.crew === false ? '<span class="no">—</span>' :
@@ -691,9 +703,9 @@ zonesEl.append(g1, ...out.map(zoneRow), g2, ...back.map(zoneRow));
       <td>${crew}</td>
       <td>${drop}</td>
       <td class="num">${fmt(s.dist)}${distNote}</td>
-      <td class="num">+${fmt0(s.gain)}</td>
-      <td class="num">−${fmt0(s.loss)}</td>
-      <td class="num">${fmt0(s.ele)}</td>
+      <td class="num">+${fmt0(ele.gain)}</td>
+      <td class="num">−${fmt0(ele.loss)}</td>
+      <td class="num">${fmt0(ele.ele)}</td>
     </tr>`;
   }).join("");
   document.getElementById("aidTable").innerHTML = `
@@ -701,7 +713,15 @@ zonesEl.append(g1, ...out.map(zoneRow), g2, ...back.map(zoneRow));
       <th>Arriving at</th><th class="num">Chart mile</th><th>Cutoff</th><th>Crew</th><th>Drop bags</th>
       <th class="num">Leg dist (mi)</th><th class="num">Gain (ft)</th><th class="num">Loss (ft)</th><th class="num">Ele (ft)</th>
     </tr></thead><tbody>${rows}</tbody>`;
-})();
+  document.getElementById("aidNote").innerHTML = eleMode === "measured"
+    ? `Gain, loss and elevation are barometric, from the 2025 run. <b>Read the flat legs with care</b>:
+       where a leg climbs little, pressure noise dominates and the figure can run several times the
+       official one. On the real climbs the two agree within about 6%.`
+    : `Gain, loss and elevation come from the official route’s terrain model. Chart mile, cutoff,
+       crew and drop-bag columns are from the race chart and do not change with this toggle.`;
+}
+
+buildAidTable();
 
 // ---------- elevation profile ----------
 const svg = document.getElementById("profile");
@@ -718,7 +738,9 @@ for (const [, e] of [...P25, ...P26_OFFICIAL, ...P26_MEASURED]) { if (e < yMin) 
 function onEleChange() {
   P26 = eleMode === "measured" ? P26_MEASURED : P26_OFFICIAL;
   renderEle();
+  buildAidTable();
   drawProfile();
+  rebuild(); // aid marker popups quote elevation too
 }
 yMin = Math.floor(yMin / 500) * 500; yMax = Math.ceil(yMax / 500) * 500;
 

@@ -228,10 +228,15 @@ AID_STOPS = [
     {"name": "Finish (6th & Harrison)", "loc": "Start / Finish", "mile": 100.0, "cutoff": "10:00 AM Sun (30 h)", "crew": None, "drop": None},
 ]
 
-def aid_data(p26, dist26, marks):
+def aid_data(p26, dist26, marks, stats_ele=None):
     """Locate each official 2026 stop at its PHYSICAL location on the 2026 route
     (the chart's miles don't line up with GPX mileage), then compute between-stop
-    stats from the GPX. Chart miles/cutoffs stay as the displayed planning numbers."""
+    stats from the GPX. Chart miles/cutoffs stay as the displayed planning numbers.
+
+    stats_ele optionally supplies an alternate elevation stream (metres, aligned to p26)
+    used only for the reported gain/loss/ele. Station locating still uses p26, so two
+    callers with different elevation sources get identical segment boundaries."""
+    ep = p26 if stats_ele is None else [(p[0], p[1], e) for p, e in zip(p26, stats_ele)]
     turn = max(range(len(p26)), key=lambda i: dist_m(p26[i], p26[0]))
     lm = {m["name"]: m["ll"] for m in marks}
     anchors = {
@@ -290,7 +295,7 @@ def aid_data(p26, dist26, marks):
             continue  # start/finish already a landmark
         st = stations.setdefault(s["loc"], {
             "name": s["name"], "ll": [round(p26[j][0], 5), round(p26[j][1], 5)],
-            "ele": round(p26[j][2] * 3.28084), "visits": [], "drop": s["drop"],
+            "ele": round(ep[j][2] * 3.28084), "visits": [], "drop": s["drop"],
         })
         st["visits"].append({"leg": s.get("leg"), "mile": s["mile"], "cutoff": s["cutoff"],
                              "crew": s["crew"], "approx": approx})
@@ -298,7 +303,7 @@ def aid_data(p26, dist26, marks):
     segments = []
     for k in range(1, len(AID_STOPS)):
         a, b = seg_idx[k - 1], seg_idx[k]
-        g, l = gain_loss_ft(p26[a:b + 1])
+        g, l = gain_loss_ft(ep[a:b + 1])
         s = AID_STOPS[k]
         segments.append({
             "to": s["name"], "leg": s.get("leg"), "mile": s["mile"],
@@ -307,7 +312,7 @@ def aid_data(p26, dist26, marks):
             "gpx_mile": round(dist26[b] / 1609.344, 1),
             "gain": round(g), "loss": round(l),
             "cutoff": s["cutoff"], "crew": s["crew"], "drop": s["drop"],
-            "ele": round(p26[b][2] * 3.28084),
+            "ele": round(ep[b][2] * 3.28084),
             "approx": approx_flags[k] or approx_flags[k - 1],
         })
     return {"stations": list(stations.values()), "segments": segments}

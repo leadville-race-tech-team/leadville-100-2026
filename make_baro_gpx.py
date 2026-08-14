@@ -102,6 +102,24 @@ def main():
     print(f"\ncorrected: {total_mi:.3f} mi, gain {gain:.0f} ft, loss {loss:.0f} ft")
     print(f"  official dem gain was {dem_gain:.0f} ft, difference {gain-dem_gain:+.0f} ft")
 
+    # aid station stats on the same boundaries, so the table can swap elevation without moving legs.
+    # station locating still runs on the dem, which is what keeps the boundaries fixed.
+    marks = ag.landmarks(roche, ag.cumdist(roche))
+    a_off = ag.aid_data(pts, dist, marks)
+    a_meas = ag.aid_data(pts, dist, marks, stats_ele=ele)
+    assert [s["gpx_mile"] for s in a_off["segments"]] == [s["gpx_mile"] for s in a_meas["segments"]], \
+        "aid segment boundaries moved, the two views would not be comparable"
+    aid_measured = {
+        "segments": [{"gain": s["gain"], "loss": s["loss"], "ele": s["ele"]} for s in a_meas["segments"]],
+        "stations": [{"ele": s["ele"]} for s in a_meas["stations"]],
+    }
+    flat = [(s["to"], o["gain"], s["gain"]) for o, s in zip(a_off["segments"], a_meas["segments"])
+            if o["gain"] and abs(s["gain"] - o["gain"]) / o["gain"] > 0.5]
+    print(f"\naid stats: {len(a_meas['segments'])} segments, {len(a_meas['stations'])} stations")
+    print(f"  {len(flat)} flat segments where barometric noise moves gain by over 50 percent:")
+    for name, o, m in flat:
+        print(f"    {name:<26} official {o:>5} ft, measured {m:>5} ft")
+
     wpts, csv_total = cc.build_waypoints(pts, dist, report=False)
     print(f"\nwaypoints: {len(wpts)} total, identical to the default file")
     cc.accuracy_report(total_mi, gain, csv_total, "barometric correction")
@@ -124,7 +142,9 @@ def main():
                          "coverage_mi": round(covered_mi, 1),
                          "coverage_pct": round(covered_mi / total_mi * 100, 1),
                          # same sampling as analyze_gpx profile2026, so the chart can swap series.
-                         "profile": ag.profile(corrected, dist)},
+                         "profile": ag.profile(corrected, dist),
+                         # same segment boundaries as course_data, only the elevation differs.
+                         "aid": aid_measured},
         }, f, separators=(",", ":"))
     print(f"wrote {STATS}")
 
