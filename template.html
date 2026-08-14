@@ -159,6 +159,8 @@
   }
   .lm-label::before { display: none; }
   .lm-aid { font-weight: 700; }
+  /* imagery is busy and mostly dark, so labels get a fixed light on dark treatment there. */
+  #map.sat .lm-label { color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 4px #000; }
   .seg-tip { font-size: 12.5px; }
 
   .chart-card { margin-top: 14px; padding-bottom: 8px; }
@@ -228,6 +230,10 @@
             <button data-leg="out">Outbound</button>
             <button data-leg="in">Return</button>
           </div>
+          <div class="leg-pills" id="basePills">
+            <button data-base="map" class="on">Map</button>
+            <button data-base="satellite">Satellite</button>
+          </div>
         </div>
       </div>
       <div class="panel chart-card">
@@ -290,14 +296,25 @@ document.getElementById("tiles").innerHTML = `
 // ---------- map ----------
 const map = L.map("map", {zoomSnap: 0.25});
 let tiles = null;
+let baseMode = "map"; // map | satellite
+const mapEl = document.getElementById("map");
 function setTiles() {
   if (tiles) map.removeLayer(tiles);
   const dark = darkMq.matches;
-  tiles = L.tileLayer(`https://{s}.basemaps.cartocdn.com/${dark ? "dark_all" : "light_all"}/{z}/{x}/{y}{r}.png`, {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    maxZoom: 18,
-  }).addTo(tiles ? map : map);
+  // esri imagery is used because it serves this area up to zoom 18.
+  // the usgs public domain layer stops at 16 here, which the zone zoom would overrun.
+  tiles = baseMode === "satellite"
+    ? L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        attribution: 'Imagery &copy; <a href="https://www.esri.com/">Esri</a>, Maxar, Earthstar Geographics',
+        maxZoom: 18,
+      })
+    : L.tileLayer(`https://{s}.basemaps.cartocdn.com/${dark ? "dark_all" : "light_all"}/{z}/{x}/{y}{r}.png`, {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        maxZoom: 18,
+      });
+  tiles.addTo(map);
   tiles.bringToBack();
+  mapEl.classList.toggle("sat", baseMode === "satellite");
 }
 setTiles();
 
@@ -493,8 +510,16 @@ function setYear(y) {
   map.closePopup();
   rebuild();
 }
+const basePillsEl = document.getElementById("basePills");
+function setBase(b) {
+  // only the basemap changes here, so the course layers and popups are left alone.
+  baseMode = b;
+  for (const el of basePillsEl.querySelectorAll("button")) el.classList.toggle("on", el.dataset.base === b);
+  setTiles();
+}
 pillsEl.addEventListener("click", e => { const b = e.target.closest("button"); if (b) setLeg(b.dataset.leg); });
 yearPillsEl.addEventListener("click", e => { const b = e.target.closest("button"); if (b) setYear(b.dataset.year); });
+basePillsEl.addEventListener("click", e => { const b = e.target.closest("button"); if (b) setBase(b.dataset.base); });
 
 const all = [...T[2025].pts, ...T[2026].pts].map(p => [p[0], p[1]]);
 map.fitBounds(L.latLngBounds(all), {padding: [24, 24]});
