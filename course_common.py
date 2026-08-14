@@ -10,7 +10,7 @@ import sys
 
 import analyze_gpx as ag
 
-TRACK = "data/2026_LT_100_RUN_track.gpx"
+TRACK = "data/2026_LT_100_RUN.gpx"
 ROUTE = "data/2026_LT_100_RUN_cues.gpx"
 SHEET = "data/cuesheet.csv"
 COURSE = "course_data.json"

@@ -84,6 +84,15 @@
     padding: 12px 14px;
   }
   .tile .label { font-size: 12px; color: var(--muted); font-weight: 550; }
+  .tile .label.row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .mini-pills { display: inline-flex; gap: 2px; border: 1px solid var(--border); border-radius: 99px; padding: 2px; }
+  .mini-pills button {
+    border: 0; background: none; color: var(--muted); font: inherit; font-size: 10.5px;
+    font-weight: 650; padding: 2px 7px; border-radius: 99px; cursor: pointer; white-space: nowrap;
+  }
+  .mini-pills button:hover { color: var(--text-primary); }
+  .mini-pills button.on { background: color-mix(in oklab, var(--text-primary) 10%, transparent); color: var(--text-primary); }
+  .tile-note { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.35; }
   .tile .vals { display: flex; gap: 14px; margin-top: 4px; align-items: baseline; flex-wrap: wrap; }
   .tile .v { font-size: 19px; font-weight: 650; }
   .tile .yr { font-size: 11px; color: var(--text-secondary); display: block; margin-top: 1px;}
@@ -283,7 +292,19 @@
     that noise is filtered — the two files agree to within 66&nbsp;ft once a 10&nbsp;m threshold is
     applied. Use the default unless you specifically want measured point elevations.</p>
     <p>Sources: <b>2025</b> — David Roche’s Strava race recording (“Leadville 100 Mile CR, 15:12:30”); <b>2026</b> — official RideWithGPS route <a href="https://ridewithgps.com/routes/56633050?privacy_code=QhhFfahGrBfMsssPHVvaty7zns4NyLcN" target="_blank" rel="noopener">“2026 LT 100 RUN”</a>, as listed on the Leadville 100 site. Surface types (paved / unpaved / unknown) are from that RideWithGPS route’s per-point surface data, which derives from OpenStreetMap.</p>
-    <p>* Elevation gain/loss is computed from each GPX’s elevation stream with ±7.5&nbsp;m noise filtering, calibrated so the 2026 route reproduces the official figure (13,552&nbsp;ft); the same method is applied to the 2025 recording so the two are comparable. Shared sections are drawn once, following the 2026 line. “Changed” = farther than ~70&nbsp;m from every point of the other year’s track, for at least a quarter mile.</p>
+    <p>* <b>How the elevation numbers are made.</b> Gain is counted by walking the elevation stream and
+    adding every rise that exceeds ±7.5&nbsp;m, which filters sensor and sampling noise. The ±7.5&nbsp;m
+    figure is not arbitrary: it is the value at which the official 2026 route reproduces the organiser’s
+    published 13,552&nbsp;ft, so it is calibrated to their method. The same threshold is used everywhere here.
+    <b>Official</b> reads elevation from the 2026 route’s terrain model — a value looked up from a
+    digital elevation model at each point, never measured on site. <b>Measured</b> replaces that with
+    barometric readings recorded by a device carried through the 2025 race, applied across the ground the
+    two courses share and left as terrain-model data on ground new in 2026. The 2025 column is barometric
+    in both views, because a barometer is the only record of that run — which is why the Official pairing
+    compares two different kinds of measurement and the Measured pairing does not. The gap between the two
+    is mostly short-scale pressure noise rather than hidden terrain: filter at ±10&nbsp;m instead of
+    ±7.5&nbsp;m and the two 2026 figures converge to within 66&nbsp;ft. Treat the individual totals as
+    method-dependent, and the Measured pairing as the one to compare years with. Shared sections are drawn once, following the 2026 line. “Changed” = farther than ~70&nbsp;m from every point of the other year’s track, for at least a quarter mile.</p>
     <p>Aid-station miles, cutoffs and crew access are from the <b>2026 Run Course</b> tab on leadvilleraceseries.com (fetched Aug&nbsp;14,&nbsp;2026): 12 stations, and crewing is allowed only at Outward Bound, Pipeline and Twin Lakes Village (each visited twice; Twin Lakes is shuttle-access only from Outward Bound). Cutoff times without a day are Saturday; the course cutoff is 30 hours. The site’s <b>drop-bag tab has not been updated for the 2026 reroute</b> — it still lists the pre-fire locations (Mayqueen, Outward Bound, Half Pipe, Twin Lakes, Winfield). Drop bags are shown here where the names match 2026 stations; Pipeline is marked “?” because the old list names Half Pipe, which is not a 2026 station.</p>
   </footer>
 </div>
@@ -291,6 +312,7 @@
 
 <script>
 const DATA = /*__DATA__*/;
+const ELEV = /*__ELEV__*/;
 
 const fmt = (n, d=1) => n.toLocaleString("en-US", {minimumFractionDigits: d, maximumFractionDigits: d});
 const fmt0 = n => Math.round(n).toLocaleString("en-US");
@@ -303,13 +325,48 @@ document.getElementById("tiles").innerHTML = `
   <div class="tile"><div class="label">Distance</div><div class="vals">
     <span><span class="v">${fmt(S.dist2025_mi)}</span> mi<span class="yr"><span class="dot d25"></span>2025</span></span>
     <span><span class="v">${fmt(S.dist2026_mi)}</span> mi<span class="yr"><span class="dot d26"></span>2026</span></span></div></div>
-  <div class="tile"><div class="label">Elevation gain*</div><div class="vals">
-    <span><span class="v">${fmt0(S.gain2025_ft)}</span> ft<span class="yr"><span class="dot d25"></span>2025</span></span>
-    <span><span class="v">${fmt0(S.gain2026_ft)}</span> ft<span class="yr"><span class="dot d26"></span>2026</span></span></div></div>
+  <div class="tile">
+    <div class="label row">Elevation gain*
+      <span class="mini-pills" id="elePills">
+        <button data-ele="official" class="on">Official</button>
+        <button data-ele="measured">Measured</button>
+      </span>
+    </div>
+    <div class="vals" id="eleVals"></div>
+    <div class="tile-note" id="eleNote"></div>
+  </div>
   <div class="tile"><div class="label">New routing in 2026</div><div class="vals">
     <span><span class="v">${fmt(S.div2026_mi)}</span> mi<span class="yr">not on the 2025 course</span></span></div></div>
   <div class="tile"><div class="label">2025 course dropped</div><div class="vals">
     <span><span class="v">${fmt(S.div2025_mi)}</span> mi<span class="yr">not on the 2026 course</span></span></div></div>`;
+
+// ---------- elevation source toggle ----------
+// the 2025 figure is always barometric, because a barometer is the only record of that run.
+// so the official view pairs a barometer against a terrain model and is not a like for like comparison.
+// the measured view puts both years on barometric data and is the one worth comparing.
+let eleMode = "official"; // official | measured
+const elePillsEl = document.getElementById("elePills");
+const eleValsEl = document.getElementById("eleVals");
+const eleNoteEl = document.getElementById("eleNote");
+
+function renderEle() {
+  const ft26 = eleMode === "official" ? ELEV.official.gain_ft : ELEV.measured.gain_ft;
+  eleValsEl.innerHTML = `
+    <span><span class="v">${fmt0(S.gain2025_ft)}</span> ft<span class="yr"><span class="dot d25"></span>2025</span></span>
+    <span><span class="v">${fmt0(ft26)}</span> ft<span class="yr"><span class="dot d26"></span>2026</span></span>`;
+  const diff = ft26 - S.gain2025_ft;
+  eleNoteEl.innerHTML = eleMode === "official"
+    ? `2026 from the official route’s terrain model, 2025 from a barometer. Different sources, so
+       <b>not directly comparable</b>.`
+    : `Both years barometric, from the 2025 race recording (covers ${ELEV.measured.coverage_pct}% of the
+       2026 course). Comparable: 2026 climbs <b>${fmt0(Math.abs(diff))} ft ${diff > 0 ? "more" : "less"}</b>.`;
+  for (const b of elePillsEl.querySelectorAll("button")) b.classList.toggle("on", b.dataset.ele === eleMode);
+}
+elePillsEl.addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (b) { eleMode = b.dataset.ele; renderEle(); }
+});
+renderEle();
 
 // ---------- map ----------
 const map = L.map("map", {zoomSnap: 0.25});

@@ -2,7 +2,7 @@
 <gpx version="1.1" creator="therealleadville2026course.com" xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
   <metadata>
     <name>Leadville Trail 100 Run 2026 course</name>
-    <desc>Official 2026 course with corrected elevation. Geometry is the RideWithGPS GPX Track export of route 56633050 (2026-08-12T13:04:16Z), unchanged. Elevation is barometric, taken from a 2025 race recording across the 68.5 mi the two courses share; ground new in 2026 keeps RideWithGPS DEM, ramped at the seams. Measures 99.84 mi with 14576 ft of gain, against 13550 ft for the DEM. That difference is largely barometric noise, so treat the gain figure with caution. Use leadville-100-2026-official.gpx if you need official-only provenance.</desc>
+    <desc>Official 2026 course with corrected elevation. Geometry is the RideWithGPS GPX Track export of route 56633050 (2026-08-12T13:04:16Z), unchanged. Elevation is barometric, taken from a 2025 race recording across the 68.5 mi the two courses share; ground new in 2026 keeps RideWithGPS DEM, ramped at the seams. Measures 99.84 mi with 14569 ft of gain, against 13550 ft for the DEM. That difference is largely barometric noise, so treat the gain figure with caution. Use leadville-100-2026-official.gpx if you need official-only provenance.</desc>
     <link href="https://ridewithgps.com/routes/56633050"><text>2026 LT 100 RUN</text></link>
     <time>2026-08-12T13:04:16Z</time>
   </metadata>

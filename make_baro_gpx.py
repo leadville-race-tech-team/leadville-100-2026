@@ -7,10 +7,14 @@
 # the 2025 race recording carries barometric elevation from a device that was actually there.
 # on shared ground the dem reads lower, so the recording replaces it point by point.
 # ground new in 2026 has no recording, so it keeps dem, ramped at the seams to avoid a step.
+import json
+
 import analyze_gpx as ag
 import course_common as cc
 
 OUT = "leadville-100-2026-measured-elevation.gpx"
+# the page reads this so the two gain figures are never hardcoded in the template.
+STATS = "elevation_sources.json"
 
 MATCH_M = 25.0   # how close a recording point must be to lend its elevation
 
@@ -90,6 +94,9 @@ def main():
         ele[k] -= resid * dist[k] / (dist[-1] or 1.0)
     print(f"  closed loop elevation, removed {resid*3.28084:+.1f} ft of drift")
 
+    # round first, to one decimal, exactly as the file is written.
+    # otherwise the page would quote a gain nobody can reproduce from the download.
+    ele = [round(e, 1) for e in ele]
     corrected = [(pts[i][0], pts[i][1], ele[i]) for i in range(len(pts))]
     gain, loss = ag.gain_loss_ft(corrected)
     print(f"\ncorrected: {total_mi:.3f} mi, gain {gain:.0f} ft, loss {loss:.0f} ft")
@@ -108,6 +115,16 @@ def main():
             f"for the DEM. That difference is largely barometric noise, so treat the gain figure "
             f"with caution. Use leadville-100-2026-official.gpx if you need official-only provenance.")
     cc.write_gpx(OUT, desc, meta, wpts, rows, lambda i: ele[i])
+
+    with open(STATS, "w") as f:
+        json.dump({
+            "threshold_m": 7.5,
+            "official": {"gain_ft": round(dem_gain), "loss_ft": round(ag.gain_loss_ft(pts)[1])},
+            "measured": {"gain_ft": round(gain), "loss_ft": round(loss),
+                         "coverage_mi": round(covered_mi, 1),
+                         "coverage_pct": round(covered_mi / total_mi * 100, 1)},
+        }, f, separators=(",", ":"))
+    print(f"wrote {STATS}")
 
 
 if __name__ == "__main__":

@@ -102,7 +102,18 @@ raw inputs under `data/`).
 ## Data notes
 
 - Elevation gain/loss uses symmetric ±7.5 m hysteresis, calibrated to reproduce the
-  official 2026 figure (13,552 ft); the same method is applied to both years.
+  official 2026 figure (13,552 ft). The same *threshold* is applied to both years, but not
+  the same elevation *source*, and the source dominates. The stat tile therefore has an
+  **Official / Measured** toggle for 2026:
+
+  | View | 2025 | 2026 | Comparable? |
+  |---|---|---|---|
+  | Official | 13,694 ft (barometric) | 13,550 ft (terrain model) | **No** — two different kinds of measurement |
+  | Measured | 13,694 ft (barometric) | 14,569 ft (barometric) | Yes — 2026 climbs ~875 ft more |
+
+  The 2025 column is barometric in both views, because a barometer is the only record of
+  that run. Reading the Official pairing as a year-on-year comparison inverts the sign of
+  the answer. Both 2026 figures are reproducible from the matching GPX download.
 - Aid-station miles, cutoffs, and crew info come from the 2026 Run Course tab on
   leadvilleraceseries.com (fetched 2026-08-14). The site's drop-bag tab predates the
   reroute; drop-bag info is mapped where station names match and flagged "?" otherwise.
