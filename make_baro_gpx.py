@@ -16,7 +16,8 @@ OUT = "leadville-100-2026-measured-elevation.gpx"
 # the page reads this so the two gain figures are never hardcoded in the template.
 STATS = "elevation_sources.json"
 
-MATCH_M = 25.0   # how close a recording point must be to lend its elevation
+MATCH_M = 25.0        # how close a recording point must be to lend its elevation
+RELOCK_AFTER = 10     # consecutive misses before the locked recording leg may change
 
 
 def main():
@@ -29,22 +30,66 @@ def main():
     print(f"\n2025 recording: {len(roche)} points, "
           f"{ag.cumdist(roche)[-1]/1609.344:.2f} mi, barometric elevation")
 
-    # nearest recording elevation for every official track point.
+    # step one, remove the recording's own barometric drift.
+    # it starts and finishes at the same intersection, so any elevation change over the run is drift.
+    # spreading that out first shrinks the disagreement between its outbound and return passes.
+    rdist = ag.cumdist(roche)
+    drift = roche[-1][2] - roche[0][2]
+    roche = [(p[0], p[1], p[2] - drift * rdist[i] / (rdist[-1] or 1.0))
+             for i, p in enumerate(roche)]
+    print(f"  removed {drift*3.28084:+.1f} ft of barometric drift across the recording")
+    rturn = max(range(len(roche)), key=lambda i: ag.dist_m(roche[i], roche[0]))
+
+    # step two, look up elevation with the recording leg locked.
+    # much of the course is run out and back, so both 2025 passes sit within metres of each other.
+    # picking the spatially nearest point alone flips between passes recorded hours apart.
+    # each flip injects the drift between them as a fake step, and those steps read as climb.
+    # so a leg is held until it stops matching for a sustained stretch.
     ridx = {}
     for i, p in enumerate(roche):
         ridx.setdefault((int(p[0] / 0.002), int(p[1] / 0.002)), []).append(i)
 
-    baro = []
-    for p in pts:
+    def nearest(p, leg):
         ki, kj = int(p[0] / 0.002), int(p[1] / 0.002)
-        best, be = MATCH_M, None
+        best, bi = MATCH_M, None
         for di in (-1, 0, 1):
             for dj in (-1, 0, 1):
                 for i in ridx.get((ki + di, kj + dj), ()):
+                    if leg == "out" and i >= rturn:
+                        continue
+                    if leg == "in" and i < rturn:
+                        continue
                     d = ag.dist_m(p, roche[i])
                     if d < best:
-                        best, be = d, roche[i][2]
-        baro.append(be)
+                        best, bi = d, i
+        return bi, best
+
+    baro = []
+    lock = None
+    misses = 0
+    switches = 0
+    for p in pts:
+        hit = None
+        if lock is not None:
+            i, _ = nearest(p, lock)
+            if i is not None:
+                hit, misses = i, 0
+            else:
+                misses += 1
+                if misses > RELOCK_AFTER:
+                    lock = None
+        if lock is None:
+            # relock to whichever pass is actually closer here.
+            cands = [(d, i, lg) for lg in ("out", "in")
+                     for i, d in [nearest(p, lg)] if i is not None]
+            if cands:
+                _, i, lg = min(cands)
+                if lock != lg:
+                    switches += 1
+                lock, hit, misses = lg, i, 0
+        baro.append(roche[hit][2] if hit is not None else None)
+    print(f"  leg locked lookup switched pass {switches} times, "
+          f"instead of flipping at every point")
 
     have = sum(1 for b in baro if b is not None)
     covered_mi = 0.0
@@ -130,8 +175,9 @@ def main():
             f"barometric, taken from a 2025 race recording across the {covered_mi:.1f} mi the two "
             f"courses share; ground new in 2026 keeps RideWithGPS DEM, ramped at the seams. "
             f"Measures {total_mi:.2f} mi with {gain:.0f} ft of gain, against {dem_gain:.0f} ft "
-            f"for the DEM. That difference is largely barometric noise, so treat the gain figure "
-            f"with caution. Use leadville-100-2026-official.gpx if you need official-only provenance.")
+            f"for the DEM. The recording's own barometric drift is removed first, and each lookup is "
+            f"locked to a single 2025 pass, so out-and-back sections cannot mix readings taken hours "
+            f"apart. Use leadville-100-2026-official.gpx if you need official-only provenance.")
     cc.write_gpx(OUT, desc, meta, wpts, rows, lambda i: ele[i])
 
     with open(STATS, "w") as f:

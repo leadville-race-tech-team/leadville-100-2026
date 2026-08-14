@@ -268,7 +268,7 @@
         <div class="chart-head">
           <h2>Elevation profile</h2>
           <span class="lg"><span class="dot d25"></span>2025 &nbsp; <span class="dot d26"></span>2026 &nbsp;·&nbsp; race miles, feet &nbsp;·&nbsp; dotted ticks = 2026 aid stations</span>
-          <span class="mini-pills" id="eleChartPills" title="Which elevation source the 2026 line uses. Official is the route's terrain model; Measured is barometric data from the 2025 run. The two differ by at most ~65 ft, so the line barely moves — the 875 ft gain difference is accumulated small rises, not a different shape.">
+          <span class="mini-pills" id="eleChartPills" title="Which elevation source the 2026 line uses. Official is the route's terrain model; Measured is barometric data from the 2025 run. The two differ by at most 58 ft, so the line barely moves. Their totals differ by 144 ft, the barometer reading slightly less climb than the terrain model.">
             <button data-ele="official" class="on">Official</button>
             <button data-ele="measured">Measured</button>
           </span>
@@ -297,10 +297,10 @@
     DEM elevation, passed through byte-for-byte, reproducing the
     published 13,552&nbsp;ft gain figure. <b>Measured-elevation GPX</b> replaces that with barometric
     readings from a 2025 race recording across the 68.5&nbsp;mi the two courses share (ground new
-    in 2026 keeps DEM). Barometric readings are more truthful at any single point, but they carry
-    short-scale pressure noise, so the total gain they imply (14,576&nbsp;ft) is sensitive to how
-    that noise is filtered — the two files agree to within 66&nbsp;ft once a 10&nbsp;m threshold is
-    applied. Use the default unless you specifically want measured point elevations.</p>
+    in 2026 keeps DEM). Barometric readings were measured on site rather than modelled. After removing
+    the recording’s own drift and locking each lookup to a single 2025 pass, they imply
+    13,405&nbsp;ft of gain — 144&nbsp;ft <i>less</i> than the terrain model. Use the default unless you
+    specifically want measured point elevations.</p>
     <p>Sources: <b>2025</b> — David Roche’s Strava race recording (“Leadville 100 Mile CR, 15:12:30”); <b>2026</b> — official RideWithGPS route <a href="https://ridewithgps.com/routes/56633050?privacy_code=QhhFfahGrBfMsssPHVvaty7zns4NyLcN" target="_blank" rel="noopener">“2026 LT 100 RUN”</a>, as listed on the Leadville 100 site. Surface types (paved / unpaved / unknown) are from that RideWithGPS route’s per-point surface data, which derives from OpenStreetMap.</p>
     <p>* <b>How the elevation numbers are made.</b> Gain is counted by walking the elevation stream and
     adding every rise that exceeds ±7.5&nbsp;m, which filters sensor and sampling noise. The ±7.5&nbsp;m
@@ -312,9 +312,13 @@
     two courses share and left as terrain-model data on ground new in 2026. The 2025 column is barometric
     in both views, because a barometer is the only record of that run — which is why the Official pairing
     compares two different kinds of measurement and the Measured pairing does not. The gap between the two
-    is mostly short-scale pressure noise rather than hidden terrain: filter at ±10&nbsp;m instead of
-    ±7.5&nbsp;m and the two 2026 figures converge to within 66&nbsp;ft. Treat the individual totals as
-    method-dependent, and the Measured pairing as the one to compare years with. Shared sections are drawn once, following the 2026 line. “Changed” = farther than ~70&nbsp;m from every point of the other year’s track, for at least a quarter mile.</p>
+    matters, so two things are done before any lookup. The recording’s barometric drift is removed
+    using the fact that it starts and finishes at the same intersection, and each lookup is locked to
+    one 2025 pass at a time. Both are necessary because much of the course runs out and back: the two
+    2025 passes sit within metres of each other but were recorded hours apart, and mixing them injects
+    that drift as climb that never happened. With that done the barometer reads 144&nbsp;ft
+    <i>less</i> gain than the terrain model, and stays below it at every filtering threshold. Treat the
+    individual totals as method-dependent, and the Measured pairing as the one to compare years with. Shared sections are drawn once, following the 2026 line. “Changed” = farther than ~70&nbsp;m from every point of the other year’s track, for at least a quarter mile.</p>
     <p>Aid-station miles, cutoffs and crew access are from the <b>2026 Run Course</b> tab on leadvilleraceseries.com (fetched Aug&nbsp;14,&nbsp;2026): 12 stations, and crewing is allowed only at Outward Bound, Pipeline and Twin Lakes Village (each visited twice; Twin Lakes is shuttle-access only from Outward Bound). Cutoff times without a day are Saturday; the course cutoff is 30 hours. The site’s <b>drop-bag tab has not been updated for the 2026 reroute</b> — it still lists the pre-fire locations (Mayqueen, Outward Bound, Half Pipe, Twin Lakes, Winfield). Drop bags are shown here where the names match 2026 stations; Pipeline is marked “?” because the old list names Half Pipe, which is not a 2026 station.</p>
   </footer>
 </div>
@@ -703,8 +707,8 @@ function buildAidTable() {
       <td>${crew}</td>
       <td>${drop}</td>
       <td class="num">${fmt(s.dist)}${distNote}</td>
-      <td class="num">+${fmt0(ele.gain)}</td>
-      <td class="num">−${fmt0(ele.loss)}</td>
+      <td class="num">${ele.gain ? "+" + fmt0(ele.gain) : "0"}</td>
+      <td class="num">${ele.loss ? "−" + fmt0(ele.loss) : "0"}</td>
       <td class="num">${fmt0(ele.ele)}</td>
     </tr>`;
   }).join("");
@@ -714,9 +718,11 @@ function buildAidTable() {
       <th class="num">Leg dist (mi)</th><th class="num">Gain (ft)</th><th class="num">Loss (ft)</th><th class="num">Ele (ft)</th>
     </tr></thead><tbody>${rows}</tbody>`;
   document.getElementById("aidNote").innerHTML = eleMode === "measured"
-    ? `Gain, loss and elevation are barometric, from the 2025 run. <b>Read the flat legs with care</b>:
-       where a leg climbs little, pressure noise dominates and the figure can run several times the
-       official one. On the real climbs the two agree within about 6%.`
+    ? `Gain, loss and elevation are barometric, from the 2025 run, de-drifted and locked to one pass
+       per section. The seven legs carrying over 1,000&nbsp;ft of climb agree with the official figures
+       within <b>5.7%</b>. Legs that barely climb are a different matter: their totals are small enough
+       that either source can differ by tens of feet, so read those as approximate — the 25&nbsp;ft
+       official figure into Outward Bound reads 0&nbsp;ft measured.`
     : `Gain, loss and elevation come from the official route’s terrain model. Chart mile, cutoff,
        crew and drop-bag columns are from the race chart and do not change with this toggle.`;
 }
