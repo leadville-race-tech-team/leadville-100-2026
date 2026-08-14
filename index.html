@@ -275,19 +275,21 @@
         </div>
         <svg id="profile" role="img" aria-label="Elevation profiles of the 2025 and 2026 courses"></svg>
       </div>
-      <div class="panel aid-card">
-        <div class="chart-head">
-          <h2>2026 aid stations — leg by leg</h2>
-          <span class="lg">miles &amp; cutoffs from the official chart · distance, gain and loss measured from the route GPX</span>
-          <span class="mini-pills" id="eleAidPills" title="Which elevation source the gain, loss and elevation columns use. Segment boundaries are identical either way, so only those three columns change.">
-            <button data-ele="official" class="on">Official</button>
-            <button data-ele="measured">Measured</button>
-          </span>
-        </div>
-        <div class="aid-wrap"><table class="aid-table" id="aidTable"></table></div>
-        <div class="tile-note" id="aidNote" style="padding: 0 14px 10px;"></div>
-      </div>
     </div>
+  </div>
+
+  <!-- full page width, because the table needs more than the right column of the grid can give it -->
+  <div class="panel aid-card">
+    <div class="chart-head">
+      <h2>2026 aid stations — leg by leg</h2>
+      <span class="lg">miles &amp; cutoffs from the official chart · distance, gain and loss measured from the route GPX</span>
+      <span class="mini-pills" id="eleAidPills" title="Which elevation source the gain, loss and elevation columns use. Segment boundaries are identical either way, so only those three columns change.">
+        <button data-ele="official" class="on">Official</button>
+        <button data-ele="measured">Measured</button>
+      </span>
+    </div>
+    <div class="aid-wrap"><table class="aid-table" id="aidTable"></table></div>
+    <div class="tile-note" id="aidNote" style="padding: 0 14px 10px;"></div>
   </div>
 
   <footer>
