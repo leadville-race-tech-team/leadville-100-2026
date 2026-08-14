@@ -19,40 +19,43 @@
 <style>
   :root {
     color-scheme: light;
-    --surface-1: #fcfcfb;
-    --page: #f9f9f7;
-    --text-primary: #0b0b0b;
-    --text-secondary: #52514e;
-    --muted: #898781;
-    --grid: #e1e0d9;
-    --baseline: #c3c2b7;
-    --border: rgba(11,11,11,0.10);
+    /* pale blue page with cool neutrals. the greys are cooled to match, because warm
+       greys over a blue page read as muddy. course and surface colours are unchanged. */
+    --surface-1: #fbfdff;
+    --page: #ecf1f8;
+    --text-primary: #0b0d10;
+    --text-secondary: #4a515a;
+    --muted: #727c89;
+    --grid: #dfe6ef;
+    --baseline: #c2ccd9;
+    --border: rgba(11,13,16,0.10);
     --c2025: #2a78d6;
     --c2026: #eb6834;
-    --shared: #898781;
-    --casing: #fcfcfb;
+    --shared: #727c89;
+    --casing: #fbfdff;
     --surfp: #4a3aa7;
     --surfu: #eda100;
-    --surfx: #898781;
+    --surfx: #727c89;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       color-scheme: dark;
-      --surface-1: #1a1a19;
-      --page: #0d0d0d;
+      /* cooled by the same amount so the two themes read as one design. */
+      --surface-1: #181c21;
+      --page: #0c0e12;
       --text-primary: #ffffff;
-      --text-secondary: #c3c2b7;
-      --muted: #898781;
-      --grid: #2c2c2a;
-      --baseline: #383835;
+      --text-secondary: #bfc6cf;
+      --muted: #8a939e;
+      --grid: #282d33;
+      --baseline: #363c44;
       --border: rgba(255,255,255,0.10);
       --c2025: #3987e5;
       --c2026: #d95926;
-      --shared: #898781;
-      --casing: #1a1a19;
+      --shared: #8a939e;
+      --casing: #181c21;
       --surfp: #9085e9;
       --surfu: #eda100;
-      --surfx: #898781;
+      --surfx: #8a939e;
     }
   }
   * { box-sizing: border-box; margin: 0; }
