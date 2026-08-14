@@ -157,6 +157,7 @@
 
   footer { color: var(--muted); font-size: 12px; margin-top: 14px; }
   footer p { margin-top: 4px; }
+  footer a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -175,7 +176,7 @@
         <div class="row"><span class="swatch swsh"></span> Shared by both years</div>
         <div class="row"><span class="swatch sw25"></span> 2025 only (dropped for 2026)</div>
         <div class="row"><span class="swatch sw26"></span> 2026 only (new routing)</div>
-        <div class="row"><span class="aid-dot"></span> 2026 aid station (click for details)</div>
+        <div class="row"><span class="aid-dot"></span> 2026 aid station (hover for details)</div>
         <div class="row"><span class="swatch swout"></span> Solid — outbound, to Winfield</div>
         <div class="row"><span class="swatch swin"></span> Dashed — return, to the finish</div>
         <div class="note">Arrowheads point in the direction of travel. Right-click (two-finger click) any line for mile, elevation and grade at that spot.</div>
@@ -217,7 +218,7 @@
   </div>
 
   <footer>
-    <p>Sources: <b>2025</b> — Strava race recording (“Leadville 100 Mile CR, 15:12:30”); <b>2026</b> — official RideWithGPS route “2026 LT 100 RUN”.</p>
+    <p>Sources: <b>2025</b> — David Roche’s Strava race recording (“Leadville 100 Mile CR, 15:12:30”); <b>2026</b> — official RideWithGPS route <a href="https://ridewithgps.com/routes/56633050?privacy_code=QhhFfahGrBfMsssPHVvaty7zns4NyLcN" target="_blank" rel="noopener">“2026 LT 100 RUN”</a>, as listed on the Leadville 100 site.</p>
     <p>* Elevation gain/loss is computed from each GPX’s elevation stream with ±7.5&nbsp;m noise filtering, calibrated so the 2026 route reproduces the official figure (13,552&nbsp;ft); the same method is applied to the 2025 recording so the two are comparable. Shared sections are drawn once, following the 2026 line. “Changed” = farther than ~70&nbsp;m from every point of the other year’s track, for at least a quarter mile.</p>
     <p>Aid-station miles, cutoffs and crew access are from the <b>2026 Run Course</b> tab on leadvilleraceseries.com (fetched Aug&nbsp;14,&nbsp;2026): 12 stations, and crewing is allowed only at Outward Bound, Pipeline and Twin Lakes Village (each visited twice; Twin Lakes is shuttle-access only from Outward Bound). Cutoff times without a day are Saturday; the course cutoff is 30 hours. The site’s <b>drop-bag tab has not been updated for the 2026 reroute</b> — it still lists the pre-fire locations (Mayqueen, Outward Bound, Half Pipe, Twin Lakes, Winfield). Drop bags are shown here where the names match 2026 stations; Pipeline is marked “?” because the old list names Half Pipe, which is not a 2026 station.</p>
   </footer>
@@ -364,11 +365,13 @@ function rebuild() {
              `mile <b>${fmt(v.mile)}${v.approx ? "~" : ""}</b>` +
              (v.cutoff ? ` · cutoff <b>${v.cutoff}</b>` : " · no cutoff") + ` · ${crew}</div>`;
     }).join("");
-    courseLayer.addLayer(
-      L.circleMarker(st.ll, {radius: 6, color: css("--casing"), weight: 2, fillColor: css("--c2026"), fillOpacity: 1})
-        .bindTooltip(st.name, {permanent: true, direction: dir, offset: dir === "right" ? [7, 0] : dir === "left" ? [-7, 0] : [0, dir === "top" ? -5 : 5], className: "lm-label lm-aid"})
-        .bindPopup(`<div class="pt-pop"><div class="h">${st.name} — 2026 aid station</div>${visits}` +
-          `<div class="r">Elevation <b>${fmt0(st.ele)} ft</b> · drop bags: <b>${st.drop === true ? "yes" : st.drop === false ? "no" : "unconfirmed"}</b></div></div>`, {maxWidth: 340}));
+    const marker = L.circleMarker(st.ll, {radius: 6, color: css("--casing"), weight: 2, fillColor: css("--c2026"), fillOpacity: 1})
+      .bindTooltip(st.name, {permanent: true, direction: dir, offset: dir === "right" ? [7, 0] : dir === "left" ? [-7, 0] : [0, dir === "top" ? -5 : 5], className: "lm-label lm-aid"})
+      .bindPopup(`<div class="pt-pop"><div class="h">${st.name} — 2026 aid station</div>${visits}` +
+        `<div class="r">Elevation <b>${fmt0(st.ele)} ft</b> · drop bags: <b>${st.drop === true ? "yes" : st.drop === false ? "no" : "unconfirmed"}</b></div></div>`, {maxWidth: 340, autoPan: false, closeButton: false});
+    marker.on("mouseover", () => marker.openPopup());
+    marker.on("mouseout", () => marker.closePopup());
+    courseLayer.addLayer(marker);
   }
 }
 let arrowBucket = null;
