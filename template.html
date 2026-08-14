@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leadville 100 Run — 2025 vs 2026 Course</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --c2025: #2a78d6;
+    --c2026: #eb6834;
+    --shared: #898781;
+    --casing: #fcfcfb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --c2025: #3987e5;
+      --c2026: #d95926;
+      --shared: #898781;
+      --casing: #1a1a19;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 20px 20px 40px; }
+  header h1 { font-size: 21px; font-weight: 650; letter-spacing: -0.01em; }
+  header .sub { color: var(--text-secondary); margin-top: 2px; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 16px 0; }
+  .tile {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .tile .label { font-size: 12px; color: var(--muted); font-weight: 550; }
+  .tile .vals { display: flex; gap: 14px; margin-top: 4px; align-items: baseline; flex-wrap: wrap; }
+  .tile .v { font-size: 19px; font-weight: 650; }
+  .tile .yr { font-size: 11px; color: var(--text-secondary); display: block; margin-top: 1px;}
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
+  .d25 { background: var(--c2025); } .d26 { background: var(--c2026); } .dsh { background: var(--shared); }
+
+  .layout { display: grid; grid-template-columns: 300px 1fr; gap: 14px; align-items: start; }
+  .layout > * { min-width: 0; }
+  @media (max-width: 880px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; }
+  .panel h2 { font-size: 13px; font-weight: 650; padding: 12px 14px 0; }
+  .legend { padding: 10px 14px 12px; border-bottom: 1px solid var(--grid); }
+  .legend .row { display: flex; align-items: center; gap: 8px; padding: 3px 0; color: var(--text-secondary); }
+  .swatch { width: 20px; height: 0; border-top: 4px solid; border-radius: 2px; flex: none; }
+  .sw25 { border-color: var(--c2025); } .sw26 { border-color: var(--c2026); }
+  .swsh { border-color: var(--shared); border-top-width: 3px; opacity: 0.75; }
+  .swout { border-color: var(--text-secondary); border-top-width: 3px; }
+  .swin { border-color: var(--text-secondary); border-top-width: 3px; border-top-style: dashed; }
+  .legend .note { color: var(--muted); font-size: 12px; padding-top: 6px; }
+  .aid-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--c2026); border: 2px solid var(--casing); box-shadow: 0 0 0 1px var(--border); flex: none; margin: 0 4.5px; }
+  .aid-card { margin-top: 14px; padding-bottom: 6px; }
+  .aid-wrap { overflow-x: auto; padding: 8px 8px 10px; }
+  .aid-table { border-collapse: collapse; width: 100%; font-size: 12.5px; min-width: 760px; }
+  .aid-table th {
+    text-align: left; color: var(--muted); font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.04em; font-weight: 650; padding: 5px 8px; border-bottom: 1px solid var(--baseline);
+    white-space: nowrap;
+  }
+  .aid-table td { padding: 6px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  .aid-table tr:last-child td { border-bottom: none; }
+  .aid-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .aid-table th.num { text-align: right; }
+  .aid-table .station { font-weight: 600; }
+  .aid-table .sub { color: var(--muted); font-weight: 400; }
+  .aid-table .yes { font-weight: 650; }
+  .aid-table .no { color: var(--muted); }
+  .legchip { display: inline-block; font-size: 10.5px; font-weight: 650; padding: 0 6px; border-radius: 99px; margin-left: 6px; color: var(--text-secondary); border: 1px solid var(--baseline); vertical-align: 1px; }
+
+  .zones { padding: 6px 6px 8px; max-height: 420px; overflow-y: auto; }
+  .zgroup { font-size: 11px; font-weight: 650; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 8px 2px; }
+  .zone {
+    display: block; width: 100%; text-align: left; border: 0; background: none; color: inherit;
+    font: inherit; padding: 7px 8px; border-radius: 8px; cursor: pointer;
+  }
+  .zone:hover { background: color-mix(in oklab, var(--text-primary) 6%, transparent); }
+  .zone .t { font-weight: 600; }
+  .zone .s { color: var(--text-secondary); font-size: 12.5px; }
+  .chip { display: inline-block; font-size: 11px; font-weight: 650; padding: 0 6px; border-radius: 99px; margin-right: 6px; color: #fff; }
+  .ch26 { background: var(--c2026); } .ch25 { background: var(--c2025); }
+
+  .map-wrap { position: relative; }
+  #map { height: 560px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-1); }
+  .pill-stack { position: absolute; top: 10px; right: 10px; z-index: 1000; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+  .leg-pills {
+    display: flex; gap: 2px; background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 99px; padding: 3px; box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+  .leg-pills button {
+    border: 0; background: none; color: var(--text-secondary); font: inherit; font-size: 12.5px;
+    font-weight: 600; padding: 4px 11px; border-radius: 99px; cursor: pointer;
+  }
+  .leg-pills button:hover { color: var(--text-primary); }
+  .leg-pills button.on { background: color-mix(in oklab, var(--text-primary) 10%, transparent); color: var(--text-primary); }
+  .leaflet-container { font: inherit; }
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+    background: var(--surface-1); color: var(--text-primary);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.22); border: 1px solid var(--border);
+  }
+  .leaflet-popup-content { margin: 10px 14px; font: inherit; font-size: 12.5px; line-height: 1.5; }
+  .leaflet-popup-close-button { color: var(--muted); }
+  .pt-pop .h { font-weight: 650; margin-bottom: 3px; }
+  .pt-pop .r { color: var(--text-secondary); }
+  .pt-pop .r b { color: var(--text-primary); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .lm-label {
+    background: none; border: none; box-shadow: none; color: var(--text-primary);
+    font-size: 11px; font-weight: 600; text-shadow: 0 0 3px var(--casing), 0 0 3px var(--casing), 0 0 3px var(--casing);
+    padding: 0 3px;
+  }
+  .lm-label::before { display: none; }
+  .lm-aid { font-weight: 700; }
+  .seg-tip { font-size: 12.5px; }
+
+  .chart-card { margin-top: 14px; padding-bottom: 8px; }
+  .chart-head { display: flex; align-items: baseline; gap: 16px; padding: 12px 14px 4px; flex-wrap: wrap; }
+  .chart-head h2 { padding: 0; }
+  .chart-head .lg { color: var(--text-secondary); font-size: 12.5px; }
+  #profile { display: block; width: 100%; height: 240px; }
+  .tooltip {
+    position: fixed; pointer-events: none; z-index: 2000; display: none;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+    padding: 7px 10px; font-size: 12.5px; box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    white-space: nowrap;
+  }
+  .tooltip .mi { font-weight: 650; margin-bottom: 2px; }
+  .tooltip .r { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+  .tooltip .r b { color: var(--text-primary); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  footer { color: var(--muted); font-size: 12px; margin-top: 14px; }
+  footer p { margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Leadville Trail 100 Run — 2025 vs 2026 course</h1>
+    <div class="sub">Overlay of the 2026 official route on a 2025 race recording, with the sections that changed highlighted. Click a changed section to zoom to it.</div>
+  </header>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="layout">
+    <div class="panel">
+      <h2>Legend</h2>
+      <div class="legend">
+        <div class="row"><span class="swatch swsh"></span> Shared by both years</div>
+        <div class="row"><span class="swatch sw25"></span> 2025 only (dropped for 2026)</div>
+        <div class="row"><span class="swatch sw26"></span> 2026 only (new routing)</div>
+        <div class="row"><span class="aid-dot"></span> 2026 aid station (click for details)</div>
+        <div class="row"><span class="swatch swout"></span> Solid — outbound, to Winfield</div>
+        <div class="row"><span class="swatch swin"></span> Dashed — return, to the finish</div>
+        <div class="note">Arrowheads point in the direction of travel. Right-click (two-finger click) any line for mile, elevation and grade at that spot.</div>
+      </div>
+      <h2>Changed sections</h2>
+      <div class="zones" id="zones"></div>
+    </div>
+    <div>
+      <div class="map-wrap">
+        <div id="map"></div>
+        <div class="pill-stack">
+          <div class="leg-pills" id="yearPills">
+            <button data-year="both" class="on">Both years</button>
+            <button data-year="2025">2025</button>
+            <button data-year="2026">2026</button>
+          </div>
+          <div class="leg-pills" id="legPills">
+            <button data-leg="all" class="on">Full course</button>
+            <button data-leg="out">Outbound</button>
+            <button data-leg="in">Return</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel chart-card">
+        <div class="chart-head">
+          <h2>Elevation profile</h2>
+          <span class="lg"><span class="dot d25"></span>2025 &nbsp; <span class="dot d26"></span>2026 &nbsp;·&nbsp; race miles, feet &nbsp;·&nbsp; dotted ticks = 2026 aid stations</span>
+        </div>
+        <svg id="profile" role="img" aria-label="Elevation profiles of the 2025 and 2026 courses"></svg>
+      </div>
+      <div class="panel aid-card">
+        <div class="chart-head">
+          <h2>2026 aid stations — leg by leg</h2>
+          <span class="lg">miles &amp; cutoffs from the official chart · distance, gain and loss measured from the route GPX</span>
+        </div>
+        <div class="aid-wrap"><table class="aid-table" id="aidTable"></table></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Sources: <b>2025</b> — Strava race recording (“Leadville 100 Mile CR, 15:12:30”); <b>2026</b> — official RideWithGPS route “2026 LT 100 RUN”.</p>
+    <p>* Elevation gain/loss is computed from each GPX’s elevation stream with ±7.5&nbsp;m noise filtering, calibrated so the 2026 route reproduces the official figure (13,552&nbsp;ft); the same method is applied to the 2025 recording so the two are comparable. Shared sections are drawn once, following the 2026 line. “Changed” = farther than ~70&nbsp;m from every point of the other year’s track, for at least a quarter mile.</p>
+    <p>Aid-station miles, cutoffs and crew access are from the <b>2026 Run Course</b> tab on leadvilleraceseries.com (fetched Aug&nbsp;14,&nbsp;2026): 12 stations, and crewing is allowed only at Outward Bound, Pipeline and Twin Lakes Village (each visited twice; Twin Lakes is shuttle-access only from Outward Bound). Cutoff times without a day are Saturday; the course cutoff is 30 hours. The site’s <b>drop-bag tab has not been updated for the 2026 reroute</b> — it still lists the pre-fire locations (Mayqueen, Outward Bound, Half Pipe, Twin Lakes, Winfield). Drop bags are shown here where the names match 2026 stations; Pipeline is marked “?” because the old list names Half Pipe, which is not a 2026 station.</p>
+  </footer>
+</div>
+<div class="tooltip" id="tip"></div>
+
+<script>
+const DATA = /*__DATA__*/;
+
+const fmt = (n, d=1) => n.toLocaleString("en-US", {minimumFractionDigits: d, maximumFractionDigits: d});
+const fmt0 = n => Math.round(n).toLocaleString("en-US");
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const darkMq = window.matchMedia("(prefers-color-scheme: dark)");
+
+// ---------- stat tiles ----------
+const S = DATA.stats;
+document.getElementById("tiles").innerHTML = `
+  <div class="tile"><div class="label">Distance</div><div class="vals">
+    <span><span class="v">${fmt(S.dist2025_mi)}</span> mi<span class="yr"><span class="dot d25"></span>2025</span></span>
+    <span><span class="v">${fmt(S.dist2026_mi)}</span> mi<span class="yr"><span class="dot d26"></span>2026</span></span></div></div>
+  <div class="tile"><div class="label">Elevation gain*</div><div class="vals">
+    <span><span class="v">${fmt0(S.gain2025_ft)}</span> ft<span class="yr"><span class="dot d25"></span>2025</span></span>
+    <span><span class="v">${fmt0(S.gain2026_ft)}</span> ft<span class="yr"><span class="dot d26"></span>2026</span></span></div></div>
+  <div class="tile"><div class="label">New routing in 2026</div><div class="vals">
+    <span><span class="v">${fmt(S.div2026_mi)}</span> mi<span class="yr">not on the 2025 course</span></span></div></div>
+  <div class="tile"><div class="label">2025 course dropped</div><div class="vals">
+    <span><span class="v">${fmt(S.div2025_mi)}</span> mi<span class="yr">not on the 2026 course</span></span></div></div>`;
+
+// ---------- map ----------
+const map = L.map("map", {zoomSnap: 0.25});
+let tiles = null;
+function setTiles() {
+  if (tiles) map.removeLayer(tiles);
+  const dark = darkMq.matches;
+  tiles = L.tileLayer(`https://{s}.basemaps.cartocdn.com/${dark ? "dark_all" : "light_all"}/{z}/{x}/{y}{r}.png`, {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    maxZoom: 18,
+  }).addTo(tiles ? map : map);
+  tiles.bringToBack();
+}
+setTiles();
+
+const T = {2025: DATA.t2025, 2026: DATA.t2026};
+const courseLayer = L.layerGroup().addTo(map);
+const lineRenderer = L.canvas({tolerance: 8, padding: 0.3});
+let legFilter = "all"; // all | out | in
+let yearFilter = "both"; // both | 2025 | 2026
+const DASH_IN = "7 6";
+
+const segMidMile = (t, s) => t.pts[(s.a + s.b) >> 1][2];
+const legWord = leg => leg === "out" ? "outbound" : "return";
+
+function bearingDeg(p, q) {
+  const dy = q[0] - p[0];
+  const dx = (q[1] - p[1]) * Math.cos(p[0] * Math.PI / 180);
+  return Math.atan2(dx, dy) * 180 / Math.PI;
+}
+function arrowMarker(t, i, iPrev, iNext, color) {
+  const deg = bearingDeg(t.pts[iPrev], t.pts[iNext]).toFixed(1);
+  const arrow = `<svg width="16" height="16" viewBox="-8 -8 16 16" style="transform:rotate(${deg}deg);display:block">
+      <path d="M-3.5,3.5 L0,-3.5 L3.5,3.5" fill="none" stroke="${css("--casing")}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M-3.5,3.5 L0,-3.5 L3.5,3.5" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+  return L.marker([t.pts[i][0], t.pts[i][1]], {
+    icon: L.divIcon({className: "", iconSize: [16, 16], iconAnchor: [8, 8], html: arrow}),
+    interactive: false, keyboard: false,
+  });
+}
+
+function arrowSpacing() {
+  const z = map.getZoom();
+  return z <= 10 ? 3.9 : z <= 11.5 ? 2.6 : 1.3; // miles between arrows, sparser when zoomed out
+}
+function addArrows(t, s, color) {
+  const sp = arrowSpacing();
+  const phase = s.leg === "in" ? sp / 2 : 0; // interleave opposing arrows on shared ground
+  for (let i = s.a + 1; i < s.b; i++) {
+    const k0 = Math.floor((t.pts[i - 1][2] - phase) / sp);
+    const k1 = Math.floor((t.pts[i][2] - phase) / sp);
+    if (k1 > k0) courseLayer.addLayer(arrowMarker(t, i, i - 1, Math.min(i + 1, s.b), color));
+  }
+}
+
+function drawnSegs(year) {
+  if (yearFilter !== "both" && String(year) !== yearFilter) return [];
+  const segs = T[year].segs.filter(s => legFilter === "all" || s.leg === legFilter);
+  // in the two-year view, shared ground is drawn once, from the 2026 line;
+  // a single-year view shows that year's whole course including its shared parts
+  if (yearFilter === "both" && year === 2025) return segs.filter(s => s.div);
+  return segs;
+}
+
+function segLine(year, s, style) {
+  const t = T[year];
+  const line = L.polyline(t.pts.slice(s.a, s.b + 1).map(p => [p[0], p[1]]), {renderer: lineRenderer, ...style});
+  if (s.div) {
+    const mid = segMidMile(t, s);
+    const z = DATA.zones.find(z => z.year === year && z.mile0 <= mid && mid <= z.mile1);
+    if (z) line.bindTooltip(
+      `<div class="seg-tip"><b>${year === 2026 ? "New in 2026" : "2025 only — dropped"}</b> · ${legWord(s.leg)}<br>` +
+      `${year} race miles ${fmt(z.mile0)}–${fmt(z.mile1)} · ${fmt(z.len_mi)} mi</div>`, {sticky: true});
+  }
+  line.on("contextmenu", e => showPointInfo(year, s, e.latlng));
+  return line;
+}
+
+function rebuild() {
+  courseLayer.clearLayers();
+  const dash = s => s.leg === "in" ? DASH_IN : null;
+  // 1: shared lines (under)
+  for (const year of [2026, 2025])
+    for (const s of drawnSegs(year).filter(s => !s.div))
+      courseLayer.addLayer(segLine(year, s, {color: css("--shared"), weight: 3, opacity: 0.65, dashArray: dash(s)}));
+  // 2: casings, then divergent lines
+  const divDraw = [[2025, drawnSegs(2025)], [2026, drawnSegs(2026).filter(s => s.div)]];
+  for (const [year, segs] of divDraw)
+    for (const s of segs)
+      courseLayer.addLayer(L.polyline(T[year].pts.slice(s.a, s.b + 1).map(p => [p[0], p[1]]),
+        {renderer: lineRenderer, color: css("--casing"), weight: 7, opacity: 0.9, interactive: false, dashArray: dash(s)}));
+  for (const [year, segs] of divDraw)
+    for (const s of segs)
+      courseLayer.addLayer(segLine(year, s, {color: css(year === 2025 ? "--c2025" : "--c2026"), weight: 4, opacity: 1, dashArray: dash(s)}));
+  // 3: direction arrows
+  for (const year of [2026, 2025])
+    for (const s of drawnSegs(year))
+      addArrows(T[year], s, s.div ? css(year === 2025 ? "--c2025" : "--c2026") : css("--shared"));
+  arrowBucket = arrowSpacing();
+  // 4: landmarks (aid-station locations are drawn as aid markers below instead)
+  const LM_DIR = {"Turquoise Lake Dam": "bottom", "Turquoise Lake north shore": "bottom", "May Queen": "left", "Sugarloaf / Powerline": "bottom", "Winfield": "bottom", "Carter Summit": "top"};
+  const AID_NAMES = new Set(["Outward Bound", "Twin Lakes", "Hope Pass", "Winfield (turnaround)", "Turquoise Lake Dam"]);
+  for (const lm of DATA.landmarks) {
+    if (AID_NAMES.has(lm.name)) continue;
+    const dir = LM_DIR[lm.name] || "right";
+    courseLayer.addLayer(
+      L.circleMarker(lm.ll, {radius: 4, color: css("--casing"), weight: 1.5, fillColor: css("--muted"), fillOpacity: 1})
+        .bindTooltip(lm.name, {permanent: true, direction: dir, offset: dir === "right" ? [6, 0] : dir === "left" ? [-6, 0] : [0, dir === "top" ? -4 : 4], className: "lm-label"}));
+  }
+  // 5: 2026 aid stations
+  for (const st of DATA.aid.stations) {
+    const dir = LM_DIR[st.name] || "right";
+    const visits = st.visits.map(v => {
+      const crew = v.crew === true ? "crew access" : v.crew === false ? "no crew" : "crew " + v.crew;
+      return `<div class="r">${v.leg === "turn" ? "Turnaround" : legWord(v.leg)[0].toUpperCase() + legWord(v.leg).slice(1)} · ` +
+             `mile <b>${fmt(v.mile)}${v.approx ? "~" : ""}</b>` +
+             (v.cutoff ? ` · cutoff <b>${v.cutoff}</b>` : " · no cutoff") + ` · ${crew}</div>`;
+    }).join("");
+    courseLayer.addLayer(
+      L.circleMarker(st.ll, {radius: 6, color: css("--casing"), weight: 2, fillColor: css("--c2026"), fillOpacity: 1})
+        .bindTooltip(st.name, {permanent: true, direction: dir, offset: dir === "right" ? [7, 0] : dir === "left" ? [-7, 0] : [0, dir === "top" ? -5 : 5], className: "lm-label lm-aid"})
+        .bindPopup(`<div class="pt-pop"><div class="h">${st.name} — 2026 aid station</div>${visits}` +
+          `<div class="r">Elevation <b>${fmt0(st.ele)} ft</b> · drop bags: <b>${st.drop === true ? "yes" : st.drop === false ? "no" : "unconfirmed"}</b></div></div>`, {maxWidth: 340}));
+  }
+}
+let arrowBucket = null;
+rebuild();
+map.on("zoomend", () => { if (arrowSpacing() !== arrowBucket) rebuild(); });
+
+// ---------- right-click point inspector ----------
+function nearestIdx(pts, a, b, ll) {
+  let best = a, bd = Infinity;
+  for (let i = a; i <= b; i++) {
+    const dy = (pts[i][0] - ll.lat) * 111132;
+    const dx = (pts[i][1] - ll.lng) * 111320 * Math.cos(ll.lat * Math.PI / 180);
+    const d = dx * dx + dy * dy;
+    if (d < bd) { bd = d; best = i; }
+  }
+  return [best, Math.sqrt(bd)];
+}
+function gradeAt(t, i) {
+  const mi = t.pts[i][2];
+  let j0 = i, j1 = i;
+  while (j0 > 0 && mi - t.pts[j0 - 1][2] <= 0.125) j0--;
+  while (j1 < t.pts.length - 1 && t.pts[j1 + 1][2] - mi <= 0.125) j1++;
+  const run = (t.pts[j1][2] - t.pts[j0][2]) * 5280;
+  if (run < 300) return null;
+  return (t.pts[j1][3] - t.pts[j0][3]) / run * 100;
+}
+function sameLegMileOther(year, i, leg) {
+  const t = T[year], o = T[year === 2025 ? 2026 : 2025];
+  const p = t.pts[i];
+  let bd = Infinity, bm = null;
+  for (const q of o.pts) {
+    if (leg === "out" ? q[2] > o.turn_mile : q[2] < o.turn_mile) continue;
+    const dy = (q[0] - p[0]) * 111132;
+    const dx = (q[1] - p[1]) * 111320 * Math.cos(p[0] * Math.PI / 180);
+    const d = dx * dx + dy * dy;
+    if (d < bd) { bd = d; bm = q[2]; }
+  }
+  return Math.sqrt(bd) <= 70 ? bm : null;
+}
+function yearRow(year, mile, leg) {
+  const t = T[year];
+  return `<div class="r"><span class="dot ${year === 2025 ? "d25" : "d26"}"></span>${year} · mile <b>${fmt(mile)}</b>` +
+         ` of ${fmt(t.total_mile)} · ${legWord(leg)} · <b>${fmt(t.total_mile - mile)} mi</b> to go</div>`;
+}
+function showPointInfo(year, s, ll) {
+  const t = T[year];
+  const [i] = nearestIdx(t.pts, s.a, s.b, ll);
+  const p = t.pts[i];
+  const title = s.div ? (year === 2026 ? "New in 2026" : "2025 course only — dropped") : "Shared — on both courses";
+  let rows = yearRow(year, p[2], s.leg);
+  if (!s.div) {
+    const om = sameLegMileOther(year, i, s.leg);
+    if (om != null) rows += yearRow(year === 2025 ? 2026 : 2025, om, s.leg);
+  }
+  const g = gradeAt(t, i);
+  const gTxt = g == null ? "—" :
+    Math.abs(g) < 1 ? "≈ level" :
+    `<b>${g > 0 ? "+" : "−"}${fmt(Math.abs(g))}%</b> ${g > 0 ? "climbing" : "descending"}`;
+  L.popup({maxWidth: 320})
+    .setLatLng([p[0], p[1]])
+    .setContent(`<div class="pt-pop"><div class="h">${title}</div>${rows}` +
+      `<div class="r">Elevation <b>${fmt0(p[3])} ft</b> · grade ${gTxt} <span style="color:var(--muted)">(in travel direction)</span></div></div>`)
+    .openOn(map);
+}
+map.on("contextmenu", () => {}); // swallow right-clicks off the lines (no browser menu)
+
+// ---------- leg & year filters ----------
+const pillsEl = document.getElementById("legPills");
+const yearPillsEl = document.getElementById("yearPills");
+function setLeg(l) {
+  legFilter = l;
+  for (const b of pillsEl.querySelectorAll("button")) b.classList.toggle("on", b.dataset.leg === l);
+  map.closePopup();
+  rebuild();
+}
+function setYear(y) {
+  yearFilter = y;
+  for (const b of yearPillsEl.querySelectorAll("button")) b.classList.toggle("on", b.dataset.year === y);
+  map.closePopup();
+  rebuild();
+}
+pillsEl.addEventListener("click", e => { const b = e.target.closest("button"); if (b) setLeg(b.dataset.leg); });
+yearPillsEl.addEventListener("click", e => { const b = e.target.closest("button"); if (b) setYear(b.dataset.year); });
+
+const all = [...T[2025].pts, ...T[2026].pts].map(p => [p[0], p[1]]);
+map.fitBounds(L.latLngBounds(all), {padding: [24, 24]});
+
+// ---------- changed-sections list ----------
+const zonesEl = document.getElementById("zones");
+function zoneRow(z) {
+  const b = document.createElement("button");
+  b.className = "zone";
+  b.innerHTML = `<div class="t"><span class="chip ${z.year === 2026 ? "ch26" : "ch25"}">${z.year}</span>miles ${fmt(z.mile0)}–${fmt(z.mile1)}</div>
+                 <div class="s">${fmt(z.len_mi)} mi ${z.year === 2026 ? "new" : "dropped"} · near ${z.near}</div>`;
+  b.onclick = () => {
+    const zLeg = z.mile0 < T[z.year].turn_mile ? "out" : "in";
+    if (legFilter !== "all" && legFilter !== zLeg) setLeg(zLeg);
+    if (yearFilter !== "both" && yearFilter !== String(z.year)) setYear("both");
+    map.flyToBounds([[z.bbox[0], z.bbox[1]], [z.bbox[2], z.bbox[3]]], {padding: [40, 40], duration: 0.8});
+  };
+  return b;
+}
+const out = DATA.zones.filter(z => z.mile0 < 50), back = DATA.zones.filter(z => z.mile0 >= 50);
+const g1 = document.createElement("div"); g1.className = "zgroup"; g1.textContent = "Outbound";
+const g2 = document.createElement("div"); g2.className = "zgroup"; g2.textContent = "Return";
+zonesEl.append(g1, ...out.map(zoneRow), g2, ...back.map(zoneRow));
+
+// ---------- aid-station table ----------
+(function buildAidTable() {
+  const rows = DATA.aid.segments.map(s => {
+    const legTag = s.leg === "turn" ? "turnaround" : s.leg === "out" ? "outbound" : s.leg === "in" ? "return" : "finish";
+    const crew = s.crew === true ? '<span class="yes">✓</span>' :
+                 s.crew === false ? '<span class="no">—</span>' :
+                 s.crew == null ? '' : `<span class="yes">✓</span> <span class="sub">${s.crew}</span>`;
+    const drop = s.drop === true ? '<span class="yes">✓</span>' : s.drop === false ? '<span class="no">—</span>' :
+                 s.drop === "?" ? '<span class="sub">?</span>' : '';
+    const distNote = Math.abs(s.gpx_dist - s.dist) >= 0.5 ? ` <span class="sub">(GPX ${fmt(s.gpx_dist)})</span>` : "";
+    return `<tr>
+      <td class="station">${s.to}${s.approx ? "&nbsp;~" : ""}<span class="legchip">${legTag}</span></td>
+      <td class="num">${fmt(s.mile)}</td>
+      <td>${s.cutoff || '<span class="no">none</span>'}</td>
+      <td>${crew}</td>
+      <td>${drop}</td>
+      <td class="num">${fmt(s.dist)}${distNote}</td>
+      <td class="num">+${fmt0(s.gain)}</td>
+      <td class="num">−${fmt0(s.loss)}</td>
+      <td class="num">${fmt0(s.ele)}</td>
+    </tr>`;
+  }).join("");
+  document.getElementById("aidTable").innerHTML = `
+    <thead><tr>
+      <th>Arriving at</th><th class="num">Chart mile</th><th>Cutoff</th><th>Crew</th><th>Drop bags</th>
+      <th class="num">Leg dist (mi)</th><th class="num">Gain (ft)</th><th class="num">Loss (ft)</th><th class="num">Ele (ft)</th>
+    </tr></thead><tbody>${rows}</tbody>`;
+})();
+
+// ---------- elevation profile ----------
+const svg = document.getElementById("profile");
+const tip = document.getElementById("tip");
+const P25 = DATA.profile2025, P26 = DATA.profile2026;
+const xMax = Math.max(P25[P25.length-1][0], P26[P26.length-1][0]);
+let yMin = Infinity, yMax = -Infinity;
+for (const [, e] of [...P25, ...P26]) { if (e < yMin) yMin = e; if (e > yMax) yMax = e; }
+yMin = Math.floor(yMin / 500) * 500; yMax = Math.ceil(yMax / 500) * 500;
+
+let geom = null;
+function drawProfile() {
+  const W = svg.clientWidth, H = svg.clientHeight;
+  const M = {l: 52, r: 14, t: 12, b: 26};
+  const x = mi => M.l + (mi / xMax) * (W - M.l - M.r);
+  const y = ft => M.t + (1 - (ft - yMin) / (yMax - yMin)) * (H - M.t - M.b);
+  geom = {x, y, W, H, M};
+  const path = pts => pts.map((p, i) => `${i ? "L" : "M"}${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join("");
+  let s = "";
+  for (let ft = yMin; ft <= yMax; ft += 500) {
+    s += `<line x1="${M.l}" x2="${W - M.r}" y1="${y(ft)}" y2="${y(ft)}" stroke="${css("--grid")}" stroke-width="1"/>` +
+         `<text x="${M.l - 8}" y="${y(ft) + 3.5}" text-anchor="end" font-size="11" fill="${css("--muted")}" style="font-variant-numeric:tabular-nums">${ft.toLocaleString()}</text>`;
+  }
+  for (let mi = 0; mi <= xMax; mi += 10) {
+    s += `<text x="${x(mi)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="${css("--muted")}" style="font-variant-numeric:tabular-nums">${mi}</text>`;
+  }
+  s += `<line x1="${M.l}" x2="${W - M.r}" y1="${y(yMin)}" y2="${y(yMin)}" stroke="${css("--baseline")}" stroke-width="1"/>`;
+  const AID_CODE = {"Carter Summit": "CS", "Turquoise Lake Dam": "TD", "Outward Bound": "OB", "Pipeline": "PL", "Twin Lakes Village": "TL", "Hope Pass": "HO", "Winfield": "WF"};
+  for (const seg of DATA.aid.segments) {
+    const code = AID_CODE[seg.to];
+    if (!code) continue;
+    const xp = x(seg.gpx_mile);
+    s += `<line x1="${xp}" x2="${xp}" y1="${M.t + 10}" y2="${y(yMin)}" stroke="${css("--baseline")}" stroke-width="1" stroke-dasharray="2 4" opacity="0.8"/>` +
+         `<text x="${xp}" y="${M.t + 6}" text-anchor="middle" font-size="9" font-weight="600" fill="${css("--muted")}">${code}</text>`;
+  }
+  s += `<path d="${path(P25)}" fill="none" stroke="${css("--c2025")}" stroke-width="2" stroke-linejoin="round"/>`;
+  s += `<path d="${path(P26)}" fill="none" stroke="${css("--c2026")}" stroke-width="2" stroke-linejoin="round" opacity="0.9"/>`;
+  s += `<line id="xhair" y1="${M.t}" y2="${y(yMin)}" stroke="${css("--baseline")}" stroke-width="1" visibility="hidden"/>`;
+  s += `<circle id="m25" r="3.5" fill="${css("--c2025")}" stroke="${css("--casing")}" stroke-width="1.5" visibility="hidden"/>`;
+  s += `<circle id="m26" r="3.5" fill="${css("--c2026")}" stroke="${css("--casing")}" stroke-width="1.5" visibility="hidden"/>`;
+  svg.innerHTML = s;
+}
+drawProfile();
+
+function eleAt(profile, mi) {
+  if (mi < profile[0][0] || mi > profile[profile.length-1][0]) return null;
+  let lo = 0, hi = profile.length - 1;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (profile[m][0] <= mi) lo = m; else hi = m; }
+  const [x0, e0] = profile[lo], [x1, e1] = profile[hi];
+  return x1 === x0 ? e0 : e0 + (e1 - e0) * (mi - x0) / (x1 - x0);
+}
+svg.addEventListener("mousemove", ev => {
+  const r = svg.getBoundingClientRect();
+  const px = ev.clientX - r.left;
+  const {x, y, M, W} = geom;
+  if (px < M.l || px > W - M.r) { hideTip(); return; }
+  const mi = (px - M.l) / (W - M.l - M.r) * xMax;
+  const e25 = eleAt(P25, mi), e26 = eleAt(P26, mi);
+  const xh = svg.querySelector("#xhair"), m25 = svg.querySelector("#m25"), m26 = svg.querySelector("#m26");
+  xh.setAttribute("x1", px); xh.setAttribute("x2", px); xh.setAttribute("visibility", "visible");
+  for (const [el, e] of [[m25, e25], [m26, e26]]) {
+    if (e == null) { el.setAttribute("visibility", "hidden"); continue; }
+    el.setAttribute("cx", px); el.setAttribute("cy", y(e)); el.setAttribute("visibility", "visible");
+  }
+  tip.style.display = "block";
+  tip.innerHTML = `<div class="mi">Mile ${fmt(mi)}</div>` +
+    (e25 != null ? `<div class="r"><span class="dot d25"></span>2025 <b>${fmt0(e25)} ft</b></div>` : "") +
+    (e26 != null ? `<div class="r"><span class="dot d26"></span>2026 <b>${fmt0(e26)} ft</b></div>` : "");
+  const tw = tip.offsetWidth;
+  tip.style.left = Math.min(ev.clientX + 14, window.innerWidth - tw - 8) + "px";
+  tip.style.top = (ev.clientY - 10) + "px";
+});
+function hideTip() {
+  tip.style.display = "none";
+  for (const id of ["xhair", "m25", "m26"]) svg.querySelector("#" + id)?.setAttribute("visibility", "hidden");
+}
+svg.addEventListener("mouseleave", hideTip);
+
+let rt = null;
+window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(drawProfile, 120); });
+darkMq.addEventListener("change", () => { setTiles(); rebuild(); drawProfile(); });
+</script>
+</body>
+</html>

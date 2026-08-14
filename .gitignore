@@ -1,0 +1,4 @@
+# raw GPX inputs (personal Strava export + RideWithGPS route) are not redistributed;
+# course_data.json is the derived, committed artifact
+data/
+__pycache__/
