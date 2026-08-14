@@ -6,7 +6,7 @@
 import analyze_gpx as ag
 import course_common as cc
 
-OUT = "leadville-100-2026.gpx"
+OUT = "leadville-100-2026-official.gpx"
 
 
 def main():

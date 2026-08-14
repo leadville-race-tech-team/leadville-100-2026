@@ -25,10 +25,10 @@ loops Turquoise Lake outbound over Carter Summit and returns via the east side).
 | `build.py` | Injects `course_data.json` into the template → `index.html` |
 | `course_data.json` | Derived course data (committed so the page builds without the raw GPX inputs) |
 | `course_common.py` | Shared provenance checks, waypoint building, and GPX writing |
-| `make_course_gpx.py` | Builds the default download → `leadville-100-2026.gpx` |
-| `make_baro_gpx.py` | Builds the elevation-corrected variant → `leadville-100-2026-baro.gpx` |
-| `leadville-100-2026.gpx` | Default download: official geometry and elevation |
-| `leadville-100-2026-baro.gpx` | Same geometry, barometric elevation on shared ground |
+| `make_course_gpx.py` | Builds the default download → `leadville-100-2026-official.gpx` |
+| `make_baro_gpx.py` | Builds the measured-elevation variant → `leadville-100-2026-measured-elevation.gpx` |
+| `leadville-100-2026-official.gpx` | Default download: official geometry and elevation |
+| `leadville-100-2026-measured-elevation.gpx` | Same geometry, barometric elevation on shared ground |
 
 ## Rebuilding
 
@@ -43,7 +43,7 @@ The raw GPX inputs (a personal 2025 race recording from Strava and the official
 
 ## The downloadable GPX
 
-`leadville-100-2026.gpx` is built by `make_course_gpx.py` from the **official RideWithGPS
+`leadville-100-2026-official.gpx` is built by `make_course_gpx.py` from the **official RideWithGPS
 export of route 56633050** as the single source of truth. Provenance is checked on every
 build: the script exits unless both exports carry `2026` in the name and the expected
 route id, and it reports the export timestamp.
@@ -72,9 +72,9 @@ Gain is threshold-dependent, not a pure property of the data: ±0 m gives 16,688
 ±5 m gives 14,364 ft, ±7.5 m gives 13,550 ft, ±15 m gives 12,824 ft. The ±7.5 m figure
 matching the published number is calibration, not independent confirmation.
 
-### The barometric variant
+### The measured-elevation variant
 
-`leadville-100-2026-baro.gpx` is the same file with one variable changed. Geometry,
+`leadville-100-2026-measured-elevation.gpx` is the same file with one variable changed. Geometry,
 distance, waypoints, and provenance are byte-for-byte identical to the default; only the
 elevation stream differs. Barometric readings from the 2025 race recording replace the DEM
 across the **68.5 mi (68.6%)** the two courses share, matched within 25 m; ground new in

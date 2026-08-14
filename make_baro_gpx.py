@@ -10,7 +10,7 @@
 import analyze_gpx as ag
 import course_common as cc
 
-OUT = "leadville-100-2026-baro.gpx"
+OUT = "leadville-100-2026-measured-elevation.gpx"
 
 MATCH_M = 25.0   # how close a recording point must be to lend its elevation
 
@@ -105,7 +105,8 @@ def main():
             f"barometric, taken from a 2025 race recording across the {covered_mi:.1f} mi the two "
             f"courses share; ground new in 2026 keeps RideWithGPS DEM, ramped at the seams. "
             f"Measures {total_mi:.2f} mi with {gain:.0f} ft of gain, against {dem_gain:.0f} ft "
-            f"for the DEM. Use the default file if you need official-only provenance.")
+            f"for the DEM. That difference is largely barometric noise, so treat the gain figure "
+            f"with caution. Use leadville-100-2026-official.gpx if you need official-only provenance.")
     cc.write_gpx(OUT, desc, meta, wpts, rows, lambda i: ele[i])
 
 
