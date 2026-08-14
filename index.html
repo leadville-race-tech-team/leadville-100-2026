@@ -31,7 +31,7 @@
     --border: rgba(11,13,16,0.10);
     --c2025: #2a78d6;
     --c2026: #eb6834;
-    --shared: #727c89;
+    --shared: #188a4e;
     --casing: #fbfdff;
     --surfp: #4a3aa7;
     --surfu: #eda100;
@@ -51,7 +51,7 @@
       --border: rgba(255,255,255,0.10);
       --c2025: #3987e5;
       --c2026: #d95926;
-      --shared: #8a939e;
+      --shared: #2ea963;
       --casing: #181c21;
       --surfp: #9085e9;
       --surfu: #eda100;
@@ -162,6 +162,9 @@
   }
   .leg-pills button:hover { color: var(--text-primary); }
   .leg-pills button.on { background: color-mix(in oklab, var(--text-primary) 10%, transparent); color: var(--text-primary); }
+  .leg-pills.flat { box-shadow: none; margin-top: 2px; }
+  .lm-sf { font-size: 12.5px; }
+  .sf-mini { flex: none; margin: 0 2.5px; font-size: 14px; line-height: 1; }
   .leaflet-container { font: inherit; }
   .leaflet-popup-content-wrapper, .leaflet-popup-tip {
     background: var(--surface-1); color: var(--text-primary);
@@ -216,6 +219,10 @@
       <a class="dl" href="leadville-100-2026-measured-elevation.gpx" download
          title="Same geometry and waypoints, but with elevation measured on the ground by a barometric device across the 68.5 mi the 2025 and 2026 courses share">↓ Measured-elevation GPX</a>
       <a class="coffee" href="https://buymeacoffee.com/roarkdev" target="_blank" rel="noopener">☕ Buy me a coffee</a>
+      <div class="leg-pills flat" id="unitPills" title="Units">
+        <button data-units="imperial" class="on">mi · ft</button>
+        <button data-units="metric">km · m</button>
+      </div>
     </div>
   </header>
 
@@ -235,6 +242,7 @@
           <div class="row"><span class="swatch swu"></span> Unpaved — <span id="surfUmi"></span></div>
           <div class="row"><span class="swatch swx"></span> Unknown surface — <span id="surfXmi"></span></div>
         </div>
+        <div class="row"><span class="sf-mini">🏁</span> Start / finish — Leadville</div>
         <div class="row"><span class="aid-dot"></span> 2026 aid station (hover for details)</div>
         <div class="row"><span class="swatch swout"></span> Solid — outbound, to Winfield</div>
         <div class="row"><span class="swatch swin"></span> Dashed — return, to the finish</div>
@@ -270,7 +278,7 @@
       <div class="panel chart-card">
         <div class="chart-head">
           <h2>Elevation profile</h2>
-          <span class="lg"><span class="dot d25"></span>2025 &nbsp; <span class="dot d26"></span>2026 &nbsp;·&nbsp; race miles, feet &nbsp;·&nbsp; dotted ticks = 2026 aid stations</span>
+          <span class="lg"><span class="dot d25"></span>2025 &nbsp; <span class="dot d26"></span>2026 &nbsp;·&nbsp; <span id="unitsNote">race miles, feet</span> &nbsp;·&nbsp; dotted ticks = 2026 aid stations</span>
           <span class="mini-pills" id="eleChartPills" title="Which elevation source the 2026 line uses. Official is the route's terrain model; Measured is barometric data from the 2025 run. The two differ by at most 58 ft, so the line barely moves. Their totals differ by 144 ft, the barometer reading slightly less climb than the terrain model.">
             <button data-ele="official" class="on">Official</button>
             <button data-ele="measured">Measured</button>
@@ -335,15 +343,28 @@ const ELEV = {"threshold_m":7.5,"official":{"gain_ft":13550,"loss_ft":13550},"me
 
 const fmt = (n, d=1) => n.toLocaleString("en-US", {minimumFractionDigits: d, maximumFractionDigits: d});
 const fmt0 = n => Math.round(n).toLocaleString("en-US");
+
+// ---------- units (all internal data stays in miles / feet; conversion is display-only) ----------
+let units = "imperial"; // imperial | metric
+const KM_PER_MI = 1.609344, M_PER_FT = 0.3048;
+const dv = mi => units === "metric" ? mi * KM_PER_MI : mi;   // distance value in display units
+const ev = ft => units === "metric" ? ft * M_PER_FT : ft;    // elevation value in display units
+const dU = () => units === "metric" ? "km" : "mi";
+const eU = () => units === "metric" ? "m" : "ft";
+const dW = () => units === "metric" ? "km" : "miles";        // plural word
+const mileW = () => units === "metric" ? "km" : "mile";      // singular word
+const fmtD = (mi, d=1) => fmt(dv(mi), d);
+const fmtE = ft => fmt0(ev(ft));
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const darkMq = window.matchMedia("(prefers-color-scheme: dark)");
 
 // ---------- stat tiles ----------
 const S = DATA.stats;
-document.getElementById("tiles").innerHTML = `
+function buildTiles() {
+  document.getElementById("tiles").innerHTML = `
   <div class="tile"><div class="label">Distance</div><div class="vals">
-    <span><span class="v">${fmt(S.dist2025_mi)}</span> mi<span class="yr"><span class="dot d25"></span>2025</span></span>
-    <span><span class="v">${fmt(S.dist2026_mi)}</span> mi<span class="yr"><span class="dot d26"></span>2026</span></span></div></div>
+    <span><span class="v">${fmtD(S.dist2025_mi)}</span> ${dU()}<span class="yr"><span class="dot d25"></span>2025</span></span>
+    <span><span class="v">${fmtD(S.dist2026_mi)}</span> ${dU()}<span class="yr"><span class="dot d26"></span>2026</span></span></div></div>
   <div class="tile">
     <div class="label row">Elevation gain*
       <span class="mini-pills" id="elePills">
@@ -355,9 +376,11 @@ document.getElementById("tiles").innerHTML = `
     <div class="tile-note" id="eleNote"></div>
   </div>
   <div class="tile"><div class="label">New routing in 2026</div><div class="vals">
-    <span><span class="v">${fmt(S.div2026_mi)}</span> mi<span class="yr">not on the 2025 course</span></span></div></div>
+    <span><span class="v">${fmtD(S.div2026_mi)}</span> ${dU()}<span class="yr">not on the 2025 course</span></span></div></div>
   <div class="tile"><div class="label">2025 course dropped</div><div class="vals">
-    <span><span class="v">${fmt(S.div2025_mi)}</span> mi<span class="yr">not on the 2026 course</span></span></div></div>`;
+    <span><span class="v">${fmtD(S.div2025_mi)}</span> ${dU()}<span class="yr">not on the 2026 course</span></span></div></div>`;
+}
+buildTiles();
 
 // ---------- elevation source toggle ----------
 // the 2025 figure is always barometric, because a barometer is the only record of that run.
@@ -365,33 +388,39 @@ document.getElementById("tiles").innerHTML = `
 // the measured view puts both years on barometric data and is the one worth comparing.
 // one variable drives the stat tile and the profile chart, so the two can never disagree.
 let eleMode = "official"; // official | measured
-const elePillsEl = document.getElementById("elePills");
 const eleChartPillsEl = document.getElementById("eleChartPills");
 const eleAidPillsEl = document.getElementById("eleAidPills");
-const eleValsEl = document.getElementById("eleVals");
-const eleNoteEl = document.getElementById("eleNote");
+// the tile-hosted controls live inside #tiles, which buildTiles() regenerates on a
+// units change — so they are re-queried and re-wired rather than captured once.
+let elePillsEl, eleValsEl, eleNoteEl;
+const eleClick = e => {
+  const b = e.target.closest("button");
+  if (b && b.dataset.ele !== eleMode) { eleMode = b.dataset.ele; onEleChange(); }
+};
+function wireEleTile() {
+  elePillsEl = document.getElementById("elePills");
+  eleValsEl = document.getElementById("eleVals");
+  eleNoteEl = document.getElementById("eleNote");
+  elePillsEl.addEventListener("click", eleClick);
+}
+wireEleTile();
 
 function renderEle() {
   const ft26 = eleMode === "official" ? ELEV.official.gain_ft : ELEV.measured.gain_ft;
   eleValsEl.innerHTML = `
-    <span><span class="v">${fmt0(S.gain2025_ft)}</span> ft<span class="yr"><span class="dot d25"></span>2025</span></span>
-    <span><span class="v">${fmt0(ft26)}</span> ft<span class="yr"><span class="dot d26"></span>2026</span></span>`;
+    <span><span class="v">${fmtE(S.gain2025_ft)}</span> ${eU()}<span class="yr"><span class="dot d25"></span>2025</span></span>
+    <span><span class="v">${fmtE(ft26)}</span> ${eU()}<span class="yr"><span class="dot d26"></span>2026</span></span>`;
   const diff = ft26 - S.gain2025_ft;
   eleNoteEl.innerHTML = eleMode === "official"
     ? `2026 from the official route’s terrain model, 2025 from a barometer. Different sources, so
        <b>not directly comparable</b>.`
     : `Both years barometric, from the 2025 race recording (covers ${ELEV.measured.coverage_pct}% of the
-       2026 course). Comparable: 2026 climbs <b>${fmt0(Math.abs(diff))} ft ${diff > 0 ? "more" : "less"}</b>.`;
+       2026 course). Comparable: 2026 climbs <b>${fmtE(Math.abs(diff))} ${eU()} ${diff > 0 ? "more" : "less"}</b>.`;
   for (const el of [elePillsEl, eleChartPillsEl, eleAidPillsEl])
     for (const b of el.querySelectorAll("button")) b.classList.toggle("on", b.dataset.ele === eleMode);
 }
 // onEleChange is a hoisted declaration further down, after the profile series exist.
-for (const el of [elePillsEl, eleChartPillsEl, eleAidPillsEl]) {
-  el.addEventListener("click", e => {
-    const b = e.target.closest("button");
-    if (b && b.dataset.ele !== eleMode) { eleMode = b.dataset.ele; onEleChange(); }
-  });
-}
+for (const el of [eleChartPillsEl, eleAidPillsEl]) el.addEventListener("click", eleClick);
 renderEle();
 
 // ---------- map ----------
@@ -478,7 +507,7 @@ function segLine(year, s, style) {
     const z = DATA.zones.find(z => z.year === year && z.mile0 <= mid && mid <= z.mile1);
     if (z) line.bindTooltip(
       `<div class="seg-tip"><b>${year === 2026 ? "New in 2026" : "2025 only — dropped"}</b> · ${legWord(s.leg)}<br>` +
-      `${year} race miles ${fmt(z.mile0)}–${fmt(z.mile1)} · ${fmt(z.len_mi)} mi</div>`, {sticky: true});
+      `${year} race ${dW()} ${fmtD(z.mile0)}–${fmtD(z.mile1)} · ${fmtD(z.len_mi)} ${dU()}</div>`, {sticky: true});
   }
   line.on("contextmenu", e => showPointInfo(year, s, e.latlng));
   return line;
@@ -492,7 +521,7 @@ function surfLine(s, dashArray) {
     {renderer: lineRenderer, color: css(SURF_CSS[s.s]), weight: 4, opacity: 1, dashArray});
   const m0 = t.pts[s.a][2], m1 = t.pts[s.b][2];
   line.bindTooltip(`<div class="seg-tip"><b>${SURF_NAME[s.s]}</b> · ${legWord(s.leg)}<br>` +
-    `2026 race miles ${fmt(m0)}–${fmt(m1)} · ${fmt(m1 - m0)} mi</div>`, {sticky: true});
+    `2026 race ${dW()} ${fmtD(m0)}–${fmtD(m1)} · ${fmtD(m1 - m0)} ${dU()}</div>`, {sticky: true});
   line.on("contextmenu", e => showPointInfo(2026, s, e.latlng));
   return line;
 }
@@ -535,6 +564,7 @@ function rebuild() {
   const AID_NAMES = new Set(["Outward Bound", "Twin Lakes", "Hope Pass", "Winfield (turnaround)", "Turquoise Lake Dam"]);
   for (const lm of DATA.landmarks) {
     if (AID_NAMES.has(lm.name)) continue;
+    if (lm.name === "Start / Finish") { addStartFinish(lm); continue; }
     const dir = LM_DIR[lm.name] || "right";
     courseLayer.addLayer(
       L.circleMarker(lm.ll, {radius: 4, color: css("--casing"), weight: 1.5, fillColor: css("--muted"), fillOpacity: 1})
@@ -548,17 +578,42 @@ function rebuild() {
     const visits = st.visits.map(v => {
       const crew = v.crew === true ? "crew access" : v.crew === false ? "no crew" : "crew " + v.crew;
       return `<div class="r">${v.leg === "turn" ? "Turnaround" : legWord(v.leg)[0].toUpperCase() + legWord(v.leg).slice(1)} · ` +
-             `mile <b>${fmt(v.mile)}${v.approx ? "~" : ""}</b>` +
+             `${mileW()} <b>${fmtD(v.mile)}${v.approx ? "~" : ""}</b>` +
              (v.cutoff ? ` · cutoff <b>${v.cutoff}</b>` : " · no cutoff") + ` · ${crew}</div>`;
     }).join("");
     const marker = L.circleMarker(st.ll, {radius: 6, color: css("--casing"), weight: 2, fillColor: css("--c2026"), fillOpacity: 1})
       .bindTooltip(st.name, {permanent: true, direction: dir, offset: dir === "right" ? [7, 0] : dir === "left" ? [-7, 0] : [0, dir === "top" ? -5 : 5], className: "lm-label lm-aid"})
       .bindPopup(`<div class="pt-pop"><div class="h">${st.name} — 2026 aid station</div>${visits}` +
-        `<div class="r">Elevation <b>${fmt0(stEle)} ft</b> · drop bags: <b>${st.drop === true ? "yes" : st.drop === false ? "no" : "unconfirmed"}</b></div></div>`, {maxWidth: 340, autoPan: false, closeButton: false});
+        `<div class="r">Elevation <b>${fmtE(stEle)} ${eU()}</b> · drop bags: <b>${st.drop === true ? "yes" : st.drop === false ? "no" : "unconfirmed"}</b></div></div>`, {maxWidth: 340, autoPan: false, closeButton: false});
     marker.on("mouseover", () => marker.openPopup());
     marker.on("mouseout", () => marker.closePopup());
     courseLayer.addLayer(marker);
   }
+}
+// prominent checkered-flag marker at the start/finish in Leadville
+function addStartFinish(lm) {
+  const flag = `<svg width="26" height="27" viewBox="0 0 26 27" style="display:block">
+      <line x1="5" y1="3" x2="5" y2="24" stroke="${css("--casing")}" stroke-width="6.5" stroke-linecap="round"/>
+      <rect x="5" y="3" width="17" height="10.5" fill="#fff" stroke="${css("--casing")}" stroke-width="3"/>
+      <line x1="5" y1="3" x2="5" y2="24" stroke="${css("--text-primary")}" stroke-width="2.5" stroke-linecap="round"/>
+      <rect x="5" y="3" width="17" height="10.5" fill="#fff"/>
+      <rect x="5" y="3" width="4.25" height="5.25" fill="#111"/>
+      <rect x="13.5" y="3" width="4.25" height="5.25" fill="#111"/>
+      <rect x="9.25" y="8.25" width="4.25" height="5.25" fill="#111"/>
+      <rect x="17.75" y="8.25" width="4.25" height="5.25" fill="#111"/>
+      <rect x="5" y="3" width="17" height="10.5" fill="none" stroke="#111" stroke-width="1"/>
+    </svg>`;
+  const marker = L.marker(lm.ll, {
+    icon: L.divIcon({className: "", iconSize: [26, 27], iconAnchor: [5, 25], html: flag}),
+    zIndexOffset: 500,
+  })
+    .bindTooltip("Start / Finish", {permanent: true, direction: "top", offset: [8, -27], className: "lm-label lm-aid lm-sf"})
+    .bindPopup(() => `<div class="pt-pop"><div class="h">Start / Finish — Leadville</div>` +
+      `<div class="r">Both years start and end here: ${mileW()} <b>0</b> and <b>${fmtD(T[2026].total_mile)}</b> (2026) · course cutoff <b>30 h</b></div></div>`,
+      {maxWidth: 340, autoPan: false, closeButton: false});
+  marker.on("mouseover", () => marker.openPopup());
+  marker.on("mouseout", () => marker.closePopup());
+  courseLayer.addLayer(marker);
 }
 let arrowBucket = null;
 rebuild();
@@ -599,8 +654,8 @@ function sameLegMileOther(year, i, leg) {
 }
 function yearRow(year, mile, leg) {
   const t = T[year];
-  return `<div class="r"><span class="dot ${year === 2025 ? "d25" : "d26"}"></span>${year} · mile <b>${fmt(mile)}</b>` +
-         ` of ${fmt(t.total_mile)} · ${legWord(leg)} · <b>${fmt(t.total_mile - mile)} mi</b> to go</div>`;
+  return `<div class="r"><span class="dot ${year === 2025 ? "d25" : "d26"}"></span>${year} · ${mileW()} <b>${fmtD(mile)}</b>` +
+         ` of ${fmtD(t.total_mile)} · ${legWord(leg)} · <b>${fmtD(t.total_mile - mile)} ${dU()}</b> to go</div>`;
 }
 function showPointInfo(year, s, ll) {
   const t = T[year];
@@ -619,7 +674,7 @@ function showPointInfo(year, s, ll) {
   L.popup({maxWidth: 320})
     .setLatLng([p[0], p[1]])
     .setContent(`<div class="pt-pop"><div class="h">${title}</div>${rows}` +
-      `<div class="r">Elevation <b>${fmt0(p[3])} ft</b> · grade ${gTxt} <span style="color:var(--muted)">(in travel direction)</span></div></div>`)
+      `<div class="r">Elevation <b>${fmtE(p[3])} ${eU()}</b> · grade ${gTxt} <span style="color:var(--muted)">(in travel direction)</span></div></div>`)
     .openOn(map);
 }
 map.on("contextmenu", () => {}); // swallow right-clicks off the lines (no browser menu)
@@ -660,11 +715,24 @@ function setMode(m) {
   rebuild();
 }
 modePillsEl.addEventListener("click", e => { const b = e.target.closest("button"); if (b && b.dataset.mode !== mapMode) setMode(b.dataset.mode); });
-(function fillSurfaceLegend() {
+
+// ---------- units toggle ----------
+const unitPillsEl = document.getElementById("unitPills");
+function setUnits(u) {
+  if (u === units) return;
+  units = u;
+  for (const b of unitPillsEl.querySelectorAll("button")) b.classList.toggle("on", b.dataset.units === u);
+  document.getElementById("unitsNote").textContent = u === "metric" ? "race kilometers, meters" : "race miles, feet";
+  map.closePopup();
+  buildTiles(); wireEleTile(); renderEle(); fillSurfaceLegend(); buildZones(); buildAidTable(); drawProfile(); rebuild();
+}
+unitPillsEl.addEventListener("click", e => { const b = e.target.closest("button"); if (b) setUnits(b.dataset.units); });
+function fillSurfaceLegend() {
   const mi = DATA.surface26.mi, tot = mi.p + mi.u + mi.x;
   for (const [k, id] of [["p", "surfPmi"], ["u", "surfUmi"], ["x", "surfXmi"]])
-    document.getElementById(id).textContent = `${fmt(mi[k])} mi (${Math.round(100 * mi[k] / tot)}%)`;
-})();
+    document.getElementById(id).textContent = `${fmtD(mi[k])} ${dU()} (${Math.round(100 * mi[k] / tot)}%)`;
+}
+fillSurfaceLegend();
 
 const all = [...T[2025].pts, ...T[2026].pts].map(p => [p[0], p[1]]);
 map.fitBounds(L.latLngBounds(all), {padding: [24, 24]});
@@ -675,8 +743,8 @@ const zonesEl = document.getElementById("zones");
 function zoneRow(z) {
   const b = document.createElement("button");
   b.className = "zone";
-  b.innerHTML = `<div class="t"><span class="chip ${z.year === 2026 ? "ch26" : "ch25"}">${z.year}</span>miles ${fmt(z.mile0)}–${fmt(z.mile1)}</div>
-                 <div class="s">${fmt(z.len_mi)} mi ${z.year === 2026 ? "new" : "dropped"} · near ${z.near}</div>`;
+  b.innerHTML = `<div class="t"><span class="chip ${z.year === 2026 ? "ch26" : "ch25"}">${z.year}</span>${dW()} ${fmtD(z.mile0)}–${fmtD(z.mile1)}</div>
+                 <div class="s">${fmtD(z.len_mi)} ${dU()} ${z.year === 2026 ? "new" : "dropped"} · near ${z.near}</div>`;
   b.onclick = () => {
     if (mapMode !== "changes") setMode("changes");
     const zLeg = z.mile0 < T[z.year].turn_mile ? "out" : "in";
@@ -686,10 +754,14 @@ function zoneRow(z) {
   };
   return b;
 }
-const out = DATA.zones.filter(z => z.mile0 < 50), back = DATA.zones.filter(z => z.mile0 >= 50);
-const g1 = document.createElement("div"); g1.className = "zgroup"; g1.textContent = "Outbound";
-const g2 = document.createElement("div"); g2.className = "zgroup"; g2.textContent = "Return";
-zonesEl.append(g1, ...out.map(zoneRow), g2, ...back.map(zoneRow));
+function buildZones() {
+  zonesEl.innerHTML = "";
+  const out = DATA.zones.filter(z => z.mile0 < 50), back = DATA.zones.filter(z => z.mile0 >= 50);
+  const g1 = document.createElement("div"); g1.className = "zgroup"; g1.textContent = "Outbound";
+  const g2 = document.createElement("div"); g2.className = "zgroup"; g2.textContent = "Return";
+  zonesEl.append(g1, ...out.map(zoneRow), g2, ...back.map(zoneRow));
+}
+buildZones();
 
 // ---------- aid-station table ----------
 // gain, loss and ele follow the elevation toggle. everything else is chart data and never moves.
@@ -704,23 +776,23 @@ function buildAidTable() {
                  s.crew == null ? '' : `<span class="yes">✓</span> <span class="sub">${s.crew}</span>`;
     const drop = s.drop === true ? '<span class="yes">✓</span>' : s.drop === false ? '<span class="no">—</span>' :
                  s.drop === "?" ? '<span class="sub">?</span>' : '';
-    const distNote = Math.abs(s.gpx_dist - s.dist) >= 0.5 ? ` <span class="sub">(GPX ${fmt(s.gpx_dist)})</span>` : "";
+    const distNote = Math.abs(s.gpx_dist - s.dist) >= 0.5 ? ` <span class="sub">(GPX ${fmtD(s.gpx_dist)})</span>` : "";
     return `<tr>
       <td class="station">${s.to}${s.approx ? "&nbsp;~" : ""}<span class="legchip">${legTag}</span></td>
-      <td class="num">${fmt(s.mile)}</td>
+      <td class="num">${fmtD(s.mile)}</td>
       <td>${s.cutoff || '<span class="no">none</span>'}</td>
       <td>${crew}</td>
       <td>${drop}</td>
-      <td class="num">${fmt(s.dist)}${distNote}</td>
-      <td class="num">${ele.gain ? "+" + fmt0(ele.gain) : "0"}</td>
-      <td class="num">${ele.loss ? "−" + fmt0(ele.loss) : "0"}</td>
-      <td class="num">${fmt0(ele.ele)}</td>
+      <td class="num">${fmtD(s.dist)}${distNote}</td>
+      <td class="num">${ele.gain ? "+" + fmtE(ele.gain) : "0"}</td>
+      <td class="num">${ele.loss ? "−" + fmtE(ele.loss) : "0"}</td>
+      <td class="num">${fmtE(ele.ele)}</td>
     </tr>`;
   }).join("");
   document.getElementById("aidTable").innerHTML = `
     <thead><tr>
-      <th>Arriving at</th><th class="num">Chart mile</th><th>Cutoff</th><th>Crew</th><th>Drop bags</th>
-      <th class="num">Leg dist (mi)</th><th class="num">Gain (ft)</th><th class="num">Loss (ft)</th><th class="num">Ele (ft)</th>
+      <th>Arriving at</th><th class="num">Chart ${mileW()}</th><th>Cutoff</th><th>Crew</th><th>Drop bags</th>
+      <th class="num">Leg dist (${dU()})</th><th class="num">Gain (${eU()})</th><th class="num">Loss (${eU()})</th><th class="num">Ele (${eU()})</th>
     </tr></thead><tbody>${rows}</tbody>`;
   document.getElementById("aidNote").innerHTML = eleMode === "measured"
     ? `Gain, loss and elevation are barometric, from the 2025 run, de-drifted and locked to one pass
@@ -753,36 +825,40 @@ function onEleChange() {
   drawProfile();
   rebuild(); // aid marker popups quote elevation too
 }
-yMin = Math.floor(yMin / 500) * 500; yMax = Math.ceil(yMax / 500) * 500;
 
 let geom = null;
 function drawProfile() {
   const W = svg.clientWidth, H = svg.clientHeight;
   const M = {l: 52, r: 14, t: 12, b: 26};
+  // axis bounds are rounded in *display* units so gridlines land on round numbers in either system
+  const step = units === "metric" ? 200 : 500;
+  const lo = Math.floor(ev(yMin) / step) * step, hi = Math.ceil(ev(yMax) / step) * step;
   const x = mi => M.l + (mi / xMax) * (W - M.l - M.r);
-  const y = ft => M.t + (1 - (ft - yMin) / (yMax - yMin)) * (H - M.t - M.b);
+  const y = ft => M.t + (1 - (ev(ft) - lo) / (hi - lo)) * (H - M.t - M.b);
+  const yv = v => M.t + (1 - (v - lo) / (hi - lo)) * (H - M.t - M.b);
   geom = {x, y, W, H, M};
   const path = pts => pts.map((p, i) => `${i ? "L" : "M"}${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join("");
   let s = "";
-  for (let ft = yMin; ft <= yMax; ft += 500) {
-    s += `<line x1="${M.l}" x2="${W - M.r}" y1="${y(ft)}" y2="${y(ft)}" stroke="${css("--grid")}" stroke-width="1"/>` +
-         `<text x="${M.l - 8}" y="${y(ft) + 3.5}" text-anchor="end" font-size="11" fill="${css("--muted")}" style="font-variant-numeric:tabular-nums">${ft.toLocaleString()}</text>`;
+  for (let v = lo; v <= hi; v += step) {
+    s += `<line x1="${M.l}" x2="${W - M.r}" y1="${yv(v)}" y2="${yv(v)}" stroke="${css("--grid")}" stroke-width="1"/>` +
+         `<text x="${M.l - 8}" y="${yv(v) + 3.5}" text-anchor="end" font-size="11" fill="${css("--muted")}" style="font-variant-numeric:tabular-nums">${v.toLocaleString()}</text>`;
   }
-  for (let mi = 0; mi <= xMax; mi += 10) {
-    s += `<text x="${x(mi)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="${css("--muted")}" style="font-variant-numeric:tabular-nums">${mi}</text>`;
+  const xstep = units === "metric" ? 20 : 10;
+  for (let v = 0; v <= dv(xMax); v += xstep) {
+    s += `<text x="${x(units === "metric" ? v / KM_PER_MI : v)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="${css("--muted")}" style="font-variant-numeric:tabular-nums">${v}</text>`;
   }
-  s += `<line x1="${M.l}" x2="${W - M.r}" y1="${y(yMin)}" y2="${y(yMin)}" stroke="${css("--baseline")}" stroke-width="1"/>`;
+  s += `<line x1="${M.l}" x2="${W - M.r}" y1="${yv(lo)}" y2="${yv(lo)}" stroke="${css("--baseline")}" stroke-width="1"/>`;
   const AID_CODE = {"Carter Summit": "CS", "Turquoise Lake Dam": "TD", "Outward Bound": "OB", "Pipeline": "PL", "Twin Lakes Village": "TL", "Hope Pass": "HO", "Winfield": "WF"};
   for (const seg of DATA.aid.segments) {
     const code = AID_CODE[seg.to];
     if (!code) continue;
     const xp = x(seg.gpx_mile);
-    s += `<line x1="${xp}" x2="${xp}" y1="${M.t + 10}" y2="${y(yMin)}" stroke="${css("--baseline")}" stroke-width="1" stroke-dasharray="2 4" opacity="0.8"/>` +
+    s += `<line x1="${xp}" x2="${xp}" y1="${M.t + 10}" y2="${yv(lo)}" stroke="${css("--baseline")}" stroke-width="1" stroke-dasharray="2 4" opacity="0.8"/>` +
          `<text x="${xp}" y="${M.t + 6}" text-anchor="middle" font-size="9" font-weight="600" fill="${css("--muted")}">${code}</text>`;
   }
   s += `<path d="${path(P25)}" fill="none" stroke="${css("--c2025")}" stroke-width="2" stroke-linejoin="round"/>`;
   s += `<path d="${path(P26)}" fill="none" stroke="${css("--c2026")}" stroke-width="2" stroke-linejoin="round" opacity="0.9"/>`;
-  s += `<line id="xhair" y1="${M.t}" y2="${y(yMin)}" stroke="${css("--baseline")}" stroke-width="1" visibility="hidden"/>`;
+  s += `<line id="xhair" y1="${M.t}" y2="${yv(lo)}" stroke="${css("--baseline")}" stroke-width="1" visibility="hidden"/>`;
   s += `<circle id="m25" r="3.5" fill="${css("--c2025")}" stroke="${css("--casing")}" stroke-width="1.5" visibility="hidden"/>`;
   s += `<circle id="m26" r="3.5" fill="${css("--c2026")}" stroke="${css("--casing")}" stroke-width="1.5" visibility="hidden"/>`;
   svg.innerHTML = s;
@@ -810,9 +886,9 @@ svg.addEventListener("mousemove", ev => {
     el.setAttribute("cx", px); el.setAttribute("cy", y(e)); el.setAttribute("visibility", "visible");
   }
   tip.style.display = "block";
-  tip.innerHTML = `<div class="mi">Mile ${fmt(mi)}</div>` +
-    (e25 != null ? `<div class="r"><span class="dot d25"></span>2025 <b>${fmt0(e25)} ft</b></div>` : "") +
-    (e26 != null ? `<div class="r"><span class="dot d26"></span>2026 <b>${fmt0(e26)} ft</b></div>` : "");
+  tip.innerHTML = `<div class="mi">${units === "metric" ? "Km" : "Mile"} ${fmtD(mi)}</div>` +
+    (e25 != null ? `<div class="r"><span class="dot d25"></span>2025 <b>${fmtE(e25)} ${eU()}</b></div>` : "") +
+    (e26 != null ? `<div class="r"><span class="dot d26"></span>2026 <b>${fmtE(e26)} ${eU()}</b></div>` : "");
   const tw = tip.offsetWidth;
   tip.style.left = Math.min(ev.clientX + 14, window.innerWidth - tw - 8) + "px";
   tip.style.top = (ev.clientY - 10) + "px";
