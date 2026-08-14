@@ -122,7 +122,9 @@ def main():
             "official": {"gain_ft": round(dem_gain), "loss_ft": round(ag.gain_loss_ft(pts)[1])},
             "measured": {"gain_ft": round(gain), "loss_ft": round(loss),
                          "coverage_mi": round(covered_mi, 1),
-                         "coverage_pct": round(covered_mi / total_mi * 100, 1)},
+                         "coverage_pct": round(covered_mi / total_mi * 100, 1),
+                         # same sampling as analyze_gpx profile2026, so the chart can swap series.
+                         "profile": ag.profile(corrected, dist)},
         }, f, separators=(",", ":"))
     print(f"wrote {STATS}")
 

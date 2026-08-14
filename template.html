@@ -93,6 +93,7 @@
   .mini-pills button:hover { color: var(--text-primary); }
   .mini-pills button.on { background: color-mix(in oklab, var(--text-primary) 10%, transparent); color: var(--text-primary); }
   .tile-note { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.35; }
+  .chart-head .mini-pills { margin-left: auto; }
   .tile .vals { display: flex; gap: 14px; margin-top: 4px; align-items: baseline; flex-wrap: wrap; }
   .tile .v { font-size: 19px; font-weight: 650; }
   .tile .yr { font-size: 11px; color: var(--text-secondary); display: block; margin-top: 1px;}
@@ -267,6 +268,10 @@
         <div class="chart-head">
           <h2>Elevation profile</h2>
           <span class="lg"><span class="dot d25"></span>2025 &nbsp; <span class="dot d26"></span>2026 &nbsp;·&nbsp; race miles, feet &nbsp;·&nbsp; dotted ticks = 2026 aid stations</span>
+          <span class="mini-pills" id="eleChartPills" title="Which elevation source the 2026 line uses. Official is the route's terrain model; Measured is barometric data from the 2025 run. The two differ by at most ~65 ft, so the line barely moves — the 875 ft gain difference is accumulated small rises, not a different shape.">
+            <button data-ele="official" class="on">Official</button>
+            <button data-ele="measured">Measured</button>
+          </span>
         </div>
         <svg id="profile" role="img" aria-label="Elevation profiles of the 2025 and 2026 courses"></svg>
       </div>
@@ -344,8 +349,10 @@ document.getElementById("tiles").innerHTML = `
 // the 2025 figure is always barometric, because a barometer is the only record of that run.
 // so the official view pairs a barometer against a terrain model and is not a like for like comparison.
 // the measured view puts both years on barometric data and is the one worth comparing.
+// one variable drives the stat tile and the profile chart, so the two can never disagree.
 let eleMode = "official"; // official | measured
 const elePillsEl = document.getElementById("elePills");
+const eleChartPillsEl = document.getElementById("eleChartPills");
 const eleValsEl = document.getElementById("eleVals");
 const eleNoteEl = document.getElementById("eleNote");
 
@@ -360,12 +367,16 @@ function renderEle() {
        <b>not directly comparable</b>.`
     : `Both years barometric, from the 2025 race recording (covers ${ELEV.measured.coverage_pct}% of the
        2026 course). Comparable: 2026 climbs <b>${fmt0(Math.abs(diff))} ft ${diff > 0 ? "more" : "less"}</b>.`;
-  for (const b of elePillsEl.querySelectorAll("button")) b.classList.toggle("on", b.dataset.ele === eleMode);
+  for (const el of [elePillsEl, eleChartPillsEl])
+    for (const b of el.querySelectorAll("button")) b.classList.toggle("on", b.dataset.ele === eleMode);
 }
-elePillsEl.addEventListener("click", e => {
-  const b = e.target.closest("button");
-  if (b) { eleMode = b.dataset.ele; renderEle(); }
-});
+// onEleChange is a hoisted declaration further down, after the profile series exist.
+for (const el of [elePillsEl, eleChartPillsEl]) {
+  el.addEventListener("click", e => {
+    const b = e.target.closest("button");
+    if (b && b.dataset.ele !== eleMode) { eleMode = b.dataset.ele; onEleChange(); }
+  });
+}
 renderEle();
 
 // ---------- map ----------
@@ -695,10 +706,20 @@ zonesEl.append(g1, ...out.map(zoneRow), g2, ...back.map(zoneRow));
 // ---------- elevation profile ----------
 const svg = document.getElementById("profile");
 const tip = document.getElementById("tip");
-const P25 = DATA.profile2025, P26 = DATA.profile2026;
-const xMax = Math.max(P25[P25.length-1][0], P26[P26.length-1][0]);
+const P25 = DATA.profile2025;
+// both 2026 series share the same mile grid, so switching only changes the y values.
+const P26_OFFICIAL = DATA.profile2026, P26_MEASURED = ELEV.measured.profile;
+let P26 = P26_OFFICIAL;
+const xMax = Math.max(P25[P25.length-1][0], P26_OFFICIAL[P26_OFFICIAL.length-1][0]);
 let yMin = Infinity, yMax = -Infinity;
-for (const [, e] of [...P25, ...P26]) { if (e < yMin) yMin = e; if (e > yMax) yMax = e; }
+// the y range covers both 2026 sources so the axis does not jump when the toggle is used.
+for (const [, e] of [...P25, ...P26_OFFICIAL, ...P26_MEASURED]) { if (e < yMin) yMin = e; if (e > yMax) yMax = e; }
+
+function onEleChange() {
+  P26 = eleMode === "measured" ? P26_MEASURED : P26_OFFICIAL;
+  renderEle();
+  drawProfile();
+}
 yMin = Math.floor(yMin / 500) * 500; yMax = Math.ceil(yMax / 500) * 500;
 
 let geom = null;
