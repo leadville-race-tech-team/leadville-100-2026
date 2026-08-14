@@ -4,7 +4,13 @@ import json, math, re, sys
 
 F2025 = "data/2025_race_recording.gpx"
 F2026 = "data/2026_LT_100_RUN.gpx"
+FRWGPS = "data/rwgps_route.json"
 OUT = "course_data.json"
+
+# RideWithGPS surface codes, verified against the route page's own totals
+# (paved 25.9 mi / unpaved 71.2 mi / unknown 2.9 mi): {0,1} paved,
+# {56,59,62,63} unpaved, {99} unknown.
+SURF_GROUP = {0: "p", 1: "p", 56: "u", 59: "u", 62: "u", 63: "u", 99: "x"}
 
 PT_RE = re.compile(r'<trkpt\s+lat="([-\d.]+)"\s+lon="([-\d.]+)"\s*>.*?<ele>([-\d.]+)</ele>', re.S)
 
@@ -306,6 +312,47 @@ def aid_data(p26, dist26, marks):
         })
     return {"stations": list(stations.values()), "segments": segments}
 
+def surface_data(t26, td26):
+    """Surface class per thinned-2026 point from the RWGPS route's per-point codes,
+    matched by along-track distance window + spatial nearest (robust where the
+    out-and-back overlaps itself). Emits index-range segs split at the turnaround."""
+    from bisect import bisect_left
+    rw = json.load(open(FRWGPS))["track_points"]
+    rd = [p["d"] for p in rw]
+    scale = rd[-1] / td26[-1]
+    cls = []
+    for i, p in enumerate(t26):
+        want = td26[i] * scale
+        lo = bisect_left(rd, want - 1600.0)
+        hi = bisect_left(rd, want + 1600.0)
+        j = min(range(lo, max(hi, lo + 1)), key=lambda k: dist_m((rw[k]["y"], rw[k]["x"]), p))
+        cls.append(SURF_GROUP.get(rw[j]["S"], "x"))
+    # merge sub-150 m runs into the previous run to avoid flicker
+    runs = to_runs(cls)
+    merged = []
+    for val, a, b in runs:
+        if merged and td26[b] - td26[a] < 150.0:
+            merged[-1] = (merged[-1][0], merged[-1][1], b)
+        elif merged and merged[-1][0] == val:
+            merged[-1] = (val, merged[-1][1], b)
+        else:
+            merged.append((val, a, b))
+    # share boundary points between adjacent runs so polylines have no gaps
+    merged = [(val, a, (merged[i + 1][1] if i + 1 < len(merged) else b))
+              for i, (val, a, b) in enumerate(merged)]
+    turn = max(range(len(t26)), key=lambda i: dist_m(t26[i], t26[0]))
+    segs = []
+    for val, a, b in merged:
+        if a < turn < b:
+            segs.append({"a": a, "b": turn, "s": val, "leg": "out"})
+            segs.append({"a": turn, "b": b, "s": val, "leg": "in"})
+        else:
+            segs.append({"a": a, "b": b, "s": val, "leg": "out" if a < turn else "in"})
+    mi = {"p": 0.0, "u": 0.0, "x": 0.0}
+    for s in segs:
+        mi[s["s"]] += (td26[s["b"]] - td26[s["a"]]) / 1609.344
+    return {"segs": segs, "mi": {k: round(v, 1) for k, v in mi.items()}}
+
 def main():
     p25 = parse(F2025)
     p26 = parse(F2026)
@@ -352,6 +399,7 @@ def main():
         "aid": aid_data(p26, dist26, marks),
         "t2025": trk25,
         "t2026": trk26,
+        "surface26": surface_data(t26, td26),
         "zones": zones,
         "landmarks": marks,
         "profile2025": profile(p25, dist25),

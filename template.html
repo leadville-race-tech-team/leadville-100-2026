@@ -31,6 +31,9 @@
     --c2026: #eb6834;
     --shared: #898781;
     --casing: #fcfcfb;
+    --surfp: #4a3aa7;
+    --surfu: #eda100;
+    --surfx: #898781;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -47,6 +50,9 @@
       --c2026: #d95926;
       --shared: #898781;
       --casing: #1a1a19;
+      --surfp: #9085e9;
+      --surfu: #eda100;
+      --surfx: #898781;
     }
   }
   * { box-sizing: border-box; margin: 0; }
@@ -94,6 +100,7 @@
   .legend .row { display: flex; align-items: center; gap: 8px; padding: 3px 0; color: var(--text-secondary); }
   .swatch { width: 20px; height: 0; border-top: 4px solid; border-radius: 2px; flex: none; }
   .sw25 { border-color: var(--c2025); } .sw26 { border-color: var(--c2026); }
+  .swp { border-color: var(--surfp); } .swu { border-color: var(--surfu); } .swx { border-color: var(--surfx); }
   .swsh { border-color: var(--shared); border-top-width: 3px; opacity: 0.75; }
   .swout { border-color: var(--text-secondary); border-top-width: 3px; }
   .swin { border-color: var(--text-secondary); border-top-width: 3px; border-top-style: dashed; }
@@ -205,9 +212,16 @@
     <div class="panel">
       <h2>Legend</h2>
       <div class="legend">
-        <div class="row"><span class="swatch swsh"></span> Shared by both years</div>
-        <div class="row"><span class="swatch sw25"></span> 2025 only (dropped for 2026)</div>
-        <div class="row"><span class="swatch sw26"></span> 2026 only (new routing)</div>
+        <div id="legendChanges">
+          <div class="row"><span class="swatch swsh"></span> Shared by both years</div>
+          <div class="row"><span class="swatch sw25"></span> 2025 only (dropped for 2026)</div>
+          <div class="row"><span class="swatch sw26"></span> 2026 only (new routing)</div>
+        </div>
+        <div id="legendSurface" style="display: none;">
+          <div class="row"><span class="swatch swp"></span> Paved — <span id="surfPmi"></span></div>
+          <div class="row"><span class="swatch swu"></span> Unpaved — <span id="surfUmi"></span></div>
+          <div class="row"><span class="swatch swx"></span> Unknown surface — <span id="surfXmi"></span></div>
+        </div>
         <div class="row"><span class="aid-dot"></span> 2026 aid station (hover for details)</div>
         <div class="row"><span class="swatch swout"></span> Solid — outbound, to Winfield</div>
         <div class="row"><span class="swatch swin"></span> Dashed — return, to the finish</div>
@@ -220,6 +234,10 @@
       <div class="map-wrap">
         <div id="map"></div>
         <div class="pill-stack">
+          <div class="leg-pills" id="modePills">
+            <button data-mode="changes" class="on">2025 vs 2026</button>
+            <button data-mode="surface">Surface (2026)</button>
+          </div>
           <div class="leg-pills" id="yearPills">
             <button data-year="both" class="on">Both years</button>
             <button data-year="2025">2025</button>
@@ -264,7 +282,7 @@
     short-scale pressure noise, so the total gain they imply (14,576&nbsp;ft) is sensitive to how
     that noise is filtered — the two files agree to within 66&nbsp;ft once a 10&nbsp;m threshold is
     applied. Use the default unless you specifically want measured point elevations.</p>
-    <p>Sources: <b>2025</b> — David Roche’s Strava race recording (“Leadville 100 Mile CR, 15:12:30”); <b>2026</b> — official RideWithGPS route <a href="https://ridewithgps.com/routes/56633050?privacy_code=QhhFfahGrBfMsssPHVvaty7zns4NyLcN" target="_blank" rel="noopener">“2026 LT 100 RUN”</a>, as listed on the Leadville 100 site.</p>
+    <p>Sources: <b>2025</b> — David Roche’s Strava race recording (“Leadville 100 Mile CR, 15:12:30”); <b>2026</b> — official RideWithGPS route <a href="https://ridewithgps.com/routes/56633050?privacy_code=QhhFfahGrBfMsssPHVvaty7zns4NyLcN" target="_blank" rel="noopener">“2026 LT 100 RUN”</a>, as listed on the Leadville 100 site. Surface types (paved / unpaved / unknown) are from that RideWithGPS route’s per-point surface data, which derives from OpenStreetMap.</p>
     <p>* Elevation gain/loss is computed from each GPX’s elevation stream with ±7.5&nbsp;m noise filtering, calibrated so the 2026 route reproduces the official figure (13,552&nbsp;ft); the same method is applied to the 2025 recording so the two are comparable. Shared sections are drawn once, following the 2026 line. “Changed” = farther than ~70&nbsp;m from every point of the other year’s track, for at least a quarter mile.</p>
     <p>Aid-station miles, cutoffs and crew access are from the <b>2026 Run Course</b> tab on leadvilleraceseries.com (fetched Aug&nbsp;14,&nbsp;2026): 12 stations, and crewing is allowed only at Outward Bound, Pipeline and Twin Lakes Village (each visited twice; Twin Lakes is shuttle-access only from Outward Bound). Cutoff times without a day are Saturday; the course cutoff is 30 hours. The site’s <b>drop-bag tab has not been updated for the 2026 reroute</b> — it still lists the pre-fire locations (Mayqueen, Outward Bound, Half Pipe, Twin Lakes, Winfield). Drop bags are shown here where the names match 2026 stations; Pipeline is marked “?” because the old list names Half Pipe, which is not a 2026 station.</p>
   </footer>
@@ -323,6 +341,7 @@ const courseLayer = L.layerGroup().addTo(map);
 const lineRenderer = L.canvas({tolerance: 8, padding: 0.3});
 let legFilter = "all"; // all | out | in
 let yearFilter = "both"; // both | 2025 | 2026
+let mapMode = "changes"; // changes | surface
 const DASH_IN = "7 6";
 
 const segMidMile = (t, s) => t.pts[(s.a + s.b) >> 1][2];
@@ -382,9 +401,33 @@ function segLine(year, s, style) {
   return line;
 }
 
+const SURF_NAME = {p: "Paved", u: "Unpaved", x: "Unknown surface"};
+const SURF_CSS = {p: "--surfp", u: "--surfu", x: "--surfx"};
+function surfLine(s, dashArray) {
+  const t = T[2026];
+  const line = L.polyline(t.pts.slice(s.a, s.b + 1).map(p => [p[0], p[1]]),
+    {renderer: lineRenderer, color: css(SURF_CSS[s.s]), weight: 4, opacity: 1, dashArray});
+  const m0 = t.pts[s.a][2], m1 = t.pts[s.b][2];
+  line.bindTooltip(`<div class="seg-tip"><b>${SURF_NAME[s.s]}</b> · ${legWord(s.leg)}<br>` +
+    `2026 race miles ${fmt(m0)}–${fmt(m1)} · ${fmt(m1 - m0)} mi</div>`, {sticky: true});
+  line.on("contextmenu", e => showPointInfo(2026, s, e.latlng));
+  return line;
+}
+
 function rebuild() {
   courseLayer.clearLayers();
   const dash = s => s.leg === "in" ? DASH_IN : null;
+  if (mapMode === "surface") {
+    const segs = DATA.surface26.segs.filter(s => legFilter === "all" || s.leg === legFilter);
+    for (const s of segs)
+      courseLayer.addLayer(L.polyline(T[2026].pts.slice(s.a, s.b + 1).map(p => [p[0], p[1]]),
+        {renderer: lineRenderer, color: css("--casing"), weight: 7, opacity: 0.9, interactive: false, dashArray: dash(s)}));
+    for (const s of segs)
+      courseLayer.addLayer(surfLine(s, dash(s)));
+    for (const s of segs)
+      addArrows(T[2026], s, css(SURF_CSS[s.s]));
+    arrowBucket = arrowSpacing();
+  } else {
   // 1: shared lines (under)
   for (const year of [2026, 2025])
     for (const s of drawnSegs(year).filter(s => !s.div))
@@ -403,6 +446,7 @@ function rebuild() {
     for (const s of drawnSegs(year))
       addArrows(T[year], s, s.div ? css(year === 2025 ? "--c2025" : "--c2026") : css("--shared"));
   arrowBucket = arrowSpacing();
+  }
   // 4: landmarks (aid-station locations are drawn as aid markers below instead)
   const LM_DIR = {"Turquoise Lake Dam": "bottom", "Turquoise Lake north shore": "bottom", "May Queen": "left", "Sugarloaf / Powerline": "bottom", "Winfield": "bottom", "Carter Summit": "top"};
   const AID_NAMES = new Set(["Outward Bound", "Twin Lakes", "Hope Pass", "Winfield (turnaround)", "Turquoise Lake Dam"]);
@@ -521,6 +565,22 @@ pillsEl.addEventListener("click", e => { const b = e.target.closest("button"); i
 yearPillsEl.addEventListener("click", e => { const b = e.target.closest("button"); if (b) setYear(b.dataset.year); });
 basePillsEl.addEventListener("click", e => { const b = e.target.closest("button"); if (b) setBase(b.dataset.base); });
 
+const modePillsEl = document.getElementById("modePills");
+function setMode(m) {
+  mapMode = m;
+  for (const b of modePillsEl.querySelectorAll("button")) b.classList.toggle("on", b.dataset.mode === m);
+  yearPillsEl.style.display = m === "surface" ? "none" : "flex";
+  document.getElementById("legendChanges").style.display = m === "surface" ? "none" : "";
+  document.getElementById("legendSurface").style.display = m === "surface" ? "" : "none";
+  rebuild();
+}
+modePillsEl.addEventListener("click", e => { const b = e.target.closest("button"); if (b && b.dataset.mode !== mapMode) setMode(b.dataset.mode); });
+(function fillSurfaceLegend() {
+  const mi = DATA.surface26.mi, tot = mi.p + mi.u + mi.x;
+  for (const [k, id] of [["p", "surfPmi"], ["u", "surfUmi"], ["x", "surfXmi"]])
+    document.getElementById(id).textContent = `${fmt(mi[k])} mi (${Math.round(100 * mi[k] / tot)}%)`;
+})();
+
 const all = [...T[2025].pts, ...T[2026].pts].map(p => [p[0], p[1]]);
 map.fitBounds(L.latLngBounds(all), {padding: [24, 24]});
 
@@ -533,6 +593,7 @@ function zoneRow(z) {
   b.innerHTML = `<div class="t"><span class="chip ${z.year === 2026 ? "ch26" : "ch25"}">${z.year}</span>miles ${fmt(z.mile0)}–${fmt(z.mile1)}</div>
                  <div class="s">${fmt(z.len_mi)} mi ${z.year === 2026 ? "new" : "dropped"} · near ${z.near}</div>`;
   b.onclick = () => {
+    if (mapMode !== "changes") setMode("changes");
     const zLeg = z.mile0 < T[z.year].turn_mile ? "out" : "in";
     if (legFilter !== "all" && legFilter !== zLeg) setLeg(zLeg);
     if (yearFilter !== "both" && yearFilter !== String(z.year)) setYear("both");
