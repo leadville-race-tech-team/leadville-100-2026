@@ -194,6 +194,8 @@
   }
   .lm-label::before { display: none; }
   .lm-aid { font-weight: 700; }
+  /* drop-bag marker on the aid-station label: emoji carry their own color, so no text-shadow halo */
+  .lm-label .db { font-size: 10px; text-shadow: none; }
   /* imagery is busy and mostly dark, so labels get a fixed light on dark treatment there. */
   #map.sat .lm-label { color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 4px #000; }
   .seg-tip { font-size: 12.5px; }
@@ -256,6 +258,7 @@
         </div>
         <div class="row"><span class="sf-mini">🏁</span> Start / finish — Leadville</div>
         <div class="row"><span class="aid-dot"></span> 2026 aid station (hover for details)</div>
+        <div class="row"><span class="sf-mini">🎒</span> Drop bags — 5 locations on course</div>
         <div class="row"><span class="swatch swout"></span> Solid — outbound, to Winfield</div>
         <div class="row"><span class="swatch swin"></span> Dashed — return, to the finish</div>
         <div class="note">Arrowheads point in the direction of travel.</div>
@@ -349,7 +352,7 @@
     that drift as climb that never happened. With that done the barometer reads 144&nbsp;ft
     <i>less</i> gain than the terrain model, and stays below it at every filtering threshold. Treat the
     individual totals as method-dependent, and the Measured pairing as the one to compare years with. Shared sections are drawn once, following the 2026 line. “Changed” = farther than ~70&nbsp;m from every point of the other year’s track, for at least a quarter mile.</p>
-    <p>Aid-station miles, cutoffs and crew access are from the <b>2026 Run Course</b> tab on leadvilleraceseries.com (fetched Aug&nbsp;14,&nbsp;2026): 12 stations, and crewing is allowed only at Outward Bound, Pipeline and Twin Lakes Village (each visited twice; Twin Lakes is shuttle-access only from Outward Bound). Cutoff times without a day are Saturday; the course cutoff is 30 hours. The site’s <b>drop-bag tab has not been updated for the 2026 reroute</b> — it still lists the pre-fire locations (Mayqueen, Outward Bound, Half Pipe, Twin Lakes, Winfield). Drop bags are shown here where the names match 2026 stations; Pipeline is marked “?” because the old list names Half Pipe, which is not a 2026 station.</p>
+    <p>Aid-station miles, cutoffs and crew access are from the <b>2026 Run Course</b> tab on leadvilleraceseries.com (fetched Aug&nbsp;14,&nbsp;2026): 12 stations, and crewing is allowed only at Outward Bound, Pipeline and Twin Lakes Village (each visited twice; Twin Lakes is shuttle-access only from Outward Bound). Cutoff times without a day are Saturday; the course cutoff is 30 hours. Drop bags go to <b>five on-course locations</b>: Turquoise Dam, Outward Bound, Half&nbsp;Pipe, Twin Lakes and Winfield — marked 🎒 on the map and ✓ in the table. “Half Pipe” is the drop-bag list’s name for the station the 2026 course chart calls <b>Pipeline</b>; the separate grey “Half Pipe” dot on the map is the old 2025 landmark, about a mile south. Carter Summit and Hope Pass take no drop bags.</p>
   </footer>
 </div>
 <div class="tooltip" id="tip"></div>
@@ -601,7 +604,8 @@ function rebuild() {
              (v.cutoff ? ` · cutoff <b>${v.cutoff}</b>` : " · no cutoff") + ` · ${crew}</div>`;
     }).join("");
     const marker = L.circleMarker(st.ll, {radius: 6, color: css("--map-casing"), weight: 2, fillColor: css("--c2026"), fillOpacity: 1})
-      .bindTooltip(st.name, {permanent: true, direction: dir, offset: dir === "right" ? [7, 0] : dir === "left" ? [-7, 0] : [0, dir === "top" ? -5 : 5], className: "lm-label lm-aid"})
+      .bindTooltip(st.name + (st.drop === true ? ' <span class="db">🎒</span>' : ""),
+        {permanent: true, direction: dir, offset: dir === "right" ? [7, 0] : dir === "left" ? [-7, 0] : [0, dir === "top" ? -5 : 5], className: "lm-label lm-aid"})
       .bindPopup(`<div class="pt-pop"><div class="h">${st.name} — 2026 aid station</div>${visits}` +
         `<div class="r">Elevation <b>${fmtE(stEle)} ${eU()}</b> · drop bags: <b>${st.drop === true ? "yes" : st.drop === false ? "no" : "unconfirmed"}</b></div></div>`, {maxWidth: 340, autoPan: false, closeButton: false});
     marker.on("mouseover", () => marker.openPopup());
@@ -891,6 +895,47 @@ function eleAt(profile, mi) {
   const [x0, e0] = profile[lo], [x1, e1] = profile[hi];
   return x1 === x0 ? e0 : e0 + (e1 - e0) * (mi - x0) / (x1 - x0);
 }
+// ---------- profile hover -> position dot on the map ----------
+// the profile's x axis is each year's own race mile, so a year's dot sits where that
+// course is at the hovered mile. only years currently drawn on the map get a dot.
+const hoverLayer = L.layerGroup().addTo(map);
+let hoverDots = null;
+function makeHoverDot(year) {
+  // a haloed ring, not a plain filled dot, so it never reads as another aid station
+  const c = css(year === 2025 ? "--c2025" : "--c2026");
+  const html = `<svg width="18" height="18" viewBox="-9 -9 18 18" style="display:block">
+      <circle r="8" fill="none" stroke="${c}" stroke-width="1.25" opacity="0.55"/>
+      <circle r="6" fill="${css("--map-casing")}"/>
+      <circle r="4" fill="${c}"/>
+    </svg>`;
+  return L.marker([0, 0], {
+    icon: L.divIcon({className: "", iconSize: [18, 18], iconAnchor: [9, 9], html}),
+    interactive: false, keyboard: false, zIndexOffset: 400,
+  });
+}
+function llAtMile(t, mi) {
+  const p = t.pts;
+  let lo = 0, hi = p.length - 1;
+  if (mi <= p[0][2]) return [p[0][0], p[0][1]];
+  if (mi >= p[hi][2]) return [p[hi][0], p[hi][1]];
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (p[m][2] <= mi) lo = m; else hi = m; }
+  const a = p[lo], b = p[hi];
+  const f = b[2] === a[2] ? 0 : (mi - a[2]) / (b[2] - a[2]);
+  return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+}
+function showHoverDot(mi) {
+  if (!hoverDots) hoverDots = {2025: makeHoverDot(2025), 2026: makeHoverDot(2026)};
+  for (const year of [2025, 2026]) {
+    const t = T[year], d = hoverDots[year];
+    const drawn = mapMode === "surface" ? year === 2026 : yearFilter === "both" || yearFilter === String(year);
+    if (!drawn || mi < 0 || mi > t.pts[t.pts.length - 1][2]) { hoverLayer.removeLayer(d); continue; }
+    d.setLatLng(llAtMile(t, mi));
+    hoverLayer.addLayer(d);
+  }
+}
+function hideHoverDot() {
+  hoverLayer.clearLayers();
+}
 svg.addEventListener("mousemove", ev => {
   const r = svg.getBoundingClientRect();
   const px = ev.clientX - r.left;
@@ -904,6 +949,7 @@ svg.addEventListener("mousemove", ev => {
     if (e == null) { el.setAttribute("visibility", "hidden"); continue; }
     el.setAttribute("cx", px); el.setAttribute("cy", y(e)); el.setAttribute("visibility", "visible");
   }
+  showHoverDot(mi);
   tip.style.display = "block";
   tip.innerHTML = `<div class="mi">${units === "metric" ? "Km" : "Mile"} ${fmtD(mi)}</div>` +
     (e25 != null ? `<div class="r"><span class="dot d25"></span>2025 <b>${fmtE(e25)} ${eU()}</b></div>` : "") +
@@ -914,13 +960,14 @@ svg.addEventListener("mousemove", ev => {
 });
 function hideTip() {
   tip.style.display = "none";
+  hideHoverDot();
   for (const id of ["xhair", "m25", "m26"]) svg.querySelector("#" + id)?.setAttribute("visibility", "hidden");
 }
 svg.addEventListener("mouseleave", hideTip);
 
 let rt = null;
 window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(drawProfile, 120); });
-darkMq.addEventListener("change", () => { setTiles(); rebuild(); drawProfile(); });
+darkMq.addEventListener("change", () => { setTiles(); rebuild(); drawProfile(); hideHoverDot(); hoverDots = null; });
 </script>
 </body>
 </html>

@@ -207,24 +207,24 @@ def gain_loss_ft(pts, thr=7.5):
 
 # Official 2026 aid-station chart (leadvilleraceseries.com "2026 Run Course" tab,
 # fetched 2026-08-14): 12 stations. Crew is allowed ONLY at Outward Bound, Pipeline
-# and Twin Lakes Village (each visited twice). The site's drop-bag tab still lists
-# the pre-fire locations (Mayqueen / Outward Bound / Half Pipe / Twin Lakes /
-# Winfield) — mapped here where names match; Pipeline is "?" since the old list
-# names Half Pipe, which is not a 2026 station.
+# and Twin Lakes Village (each visited twice). Drop bags go to five on-course
+# locations for 2026: Turquoise Dam, Outward Bound, Half Pipe, Twin Lakes and
+# Winfield. "Half Pipe" is the drop-bag list's name for the Pipeline station on the
+# 2026 chart; Carter Summit and Hope Pass take no drop bags.
 AID_STOPS = [
     {"name": "Start (6th & Harrison)", "loc": "Start / Finish", "mile": 0.0, "cutoff": None, "crew": None, "drop": None},
     {"name": "Carter Summit", "loc": "Carter Summit", "leg": "out", "mile": 10.0, "cutoff": None, "crew": False, "drop": False},
-    {"name": "Turquoise Lake Dam", "loc": "Turquoise Lake Dam", "leg": "out", "mile": 20.5, "cutoff": "10:15 AM", "crew": False, "drop": False},
+    {"name": "Turquoise Lake Dam", "loc": "Turquoise Lake Dam", "leg": "out", "mile": 20.5, "cutoff": "10:15 AM", "crew": False, "drop": True},
     {"name": "Outward Bound", "loc": "Outward Bound", "leg": "out", "mile": 26.0, "cutoff": "11:15 AM", "crew": True, "drop": True},
-    {"name": "Pipeline", "loc": "Pipeline", "leg": "out", "mile": 29.6, "cutoff": "12:45 PM", "crew": True, "drop": "?"},
+    {"name": "Pipeline", "loc": "Pipeline", "leg": "out", "mile": 29.6, "cutoff": "12:45 PM", "crew": True, "drop": True},
     {"name": "Twin Lakes Village", "loc": "Twin Lakes", "leg": "out", "mile": 40.5, "cutoff": "2:15 PM", "crew": True, "drop": True},
     {"name": "Hope Pass", "loc": "Hope Pass", "leg": "out", "mile": 45.6, "cutoff": "4:45 PM", "crew": False, "drop": False},
     {"name": "Winfield", "loc": "Winfield", "leg": "turn", "mile": 52.3, "cutoff": "6:50 PM", "crew": False, "drop": True},
     {"name": "Hope Pass", "loc": "Hope Pass", "leg": "in", "mile": 59.1, "cutoff": None, "crew": False, "drop": False},
     {"name": "Twin Lakes Village", "loc": "Twin Lakes", "leg": "in", "mile": 64.2, "cutoff": "11:00 PM", "crew": True, "drop": True},
-    {"name": "Pipeline", "loc": "Pipeline", "leg": "in", "mile": 75.1, "cutoff": "2:00 AM Sun", "crew": True, "drop": "?"},
+    {"name": "Pipeline", "loc": "Pipeline", "leg": "in", "mile": 75.1, "cutoff": "2:00 AM Sun", "crew": True, "drop": True},
     {"name": "Outward Bound", "loc": "Outward Bound", "leg": "in", "mile": 78.7, "cutoff": "3:45 AM Sun", "crew": True, "drop": True},
-    {"name": "Turquoise Lake Dam", "loc": "Turquoise Lake Dam", "leg": "in", "mile": 84.2, "cutoff": "5:30 AM Sun", "crew": False, "drop": False},
+    {"name": "Turquoise Lake Dam", "loc": "Turquoise Lake Dam", "leg": "in", "mile": 84.2, "cutoff": "5:30 AM Sun", "crew": False, "drop": True},
     {"name": "Finish (6th & Harrison)", "loc": "Start / Finish", "mile": 100.0, "cutoff": "10:00 AM Sun (30 h)", "crew": None, "drop": None},
 ]
 
