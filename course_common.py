@@ -24,7 +24,7 @@ ELE_FLAG_FT = 10.0
 GAIN_TOL_FT = 250.0
 DIST_TOL_MI = 0.20
 PUB_DIST_MI = 100.00
-PUB_GAIN_FT = 13552.0
+PUB_GAIN_FT = 13457.0
 
 TRKPT_RE = re.compile(
     r'<trkpt\s+lat="([-\d.]+)"\s+lon="([-\d.]+)"\s*>\s*<ele>([-\d.]+)</ele>', re.S)

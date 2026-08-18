@@ -191,10 +191,16 @@ def profile(pts, dists, step_m=80.0):
         target += step_m
     return out
 
-def gain_loss_ft(pts, thr=7.5):
+THR = 7.85  # hysteresis threshold in metres, see gain_loss_ft
+
+def gain_loss_ft(pts, thr=THR):
     """Total ascent/descent in feet with symmetric hysteresis (moves < thr meters are
-    treated as noise). thr=7.5 m calibrated so the 2026 route reproduces the official
-    13,552 ft figure; the same method is applied to both years for comparability."""
+    treated as noise). thr is calibrated so the 2026 route reproduces the figure
+    RideWithGPS publishes for it: 7.85 m gives 13,457 ft on the 2026-08-12 revision of
+    route 56633050, as 7.5 m gave 13,552 ft on the revision before it. The calibration
+    is not knife-edge but it is not smooth either — thresholds across 7.6-8.5 m land
+    between 13,400 and 13,490 ft, so read the total as +/-0.3%. The same method and
+    threshold are applied to both years, which is what makes them comparable."""
     g = l = 0.0
     base = pts[0][2]
     for p in pts:

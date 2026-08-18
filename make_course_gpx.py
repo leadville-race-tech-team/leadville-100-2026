@@ -16,7 +16,7 @@ def main():
     print(f"\ntrack: {len(pts)} points, {total_mi:.3f} mi")
     print(f"  elevation source: ridewithgps dem, {min(p[2] for p in pts)*3.28084:.0f}"
           f"..{max(p[2] for p in pts)*3.28084:.0f} ft")
-    print(f"  gain {gain:.0f} ft at 7.5 m hysteresis, "
+    print(f"  gain {gain:.0f} ft at {ag.THR} m hysteresis, "
           f"{ag.gain_loss_ft(pts, thr=0.0)[0]:.0f} ft with no threshold")
     print(f"  loop closure {(pts[-1][2]-pts[0][2])*3.28084:+.1f} ft")
 

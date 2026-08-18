@@ -182,7 +182,7 @@ def main():
 
     with open(STATS, "w") as f:
         json.dump({
-            "threshold_m": 7.5,
+            "threshold_m": ag.THR,
             "official": {"gain_ft": round(dem_gain), "loss_ft": round(ag.gain_loss_ft(pts)[1])},
             "measured": {"gain_ft": round(gain), "loss_ft": round(loss),
                          "coverage_mi": round(covered_mi, 1),

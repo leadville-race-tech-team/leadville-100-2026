@@ -34,6 +34,11 @@ def polys(track, want_div, color, width, opacity):
                    f'stroke-linecap="round" stroke-linejoin="round"/>')
     return "\n".join(out)
 
+# card numbers follow course_data.json, so a route revision cannot leave them stale.
+new26_mi = data["stats"]["div2026_mi"]
+drop25_mi = data["stats"]["div2025_mi"]
+gain26_ft = data["stats"]["gain2026_ft"]
+
 svg_lines = "\n".join([
     polys(data["t2026"], False, "#6b6a66", 3, 0.9),   # shared
     polys(data["t2025"], True, "#3987e5", 4, 0.95),    # 2025 only
@@ -72,9 +77,9 @@ html = f"""<!doctype html><html><head><meta charset="utf-8"><style>
     <h1>Leadville 100 Run<br><span class="y25">2025</span> vs <span class="y26">2026</span> course</h1>
     <p class="sub">Interactive map of the 2026 reroute, with aid stations, cutoffs and elevation.</p>
     <div class="stats">
-      <div class="row"><span class="dot" style="background:#d95926"></span><b>28.7 mi</b> of new 2026 routing</div>
-      <div class="row"><span class="dot" style="background:#3987e5"></span><b>19.0 mi</b> of the 2025 course dropped</div>
-      <div class="row"><span class="dot" style="background:#6b6a66"></span><b>13,550 ft</b> of climbing &nbsp;·&nbsp; <b>12</b> aid stations</div>
+      <div class="row"><span class="dot" style="background:#d95926"></span><b>{new26_mi:.1f} mi</b> of new 2026 routing</div>
+      <div class="row"><span class="dot" style="background:#3987e5"></span><b>{drop25_mi:.1f} mi</b> of the 2025 course dropped</div>
+      <div class="row"><span class="dot" style="background:#6b6a66"></span><b>{gain26_ft:,.0f} ft</b> of climbing &nbsp;·&nbsp; <b>12</b> aid stations</div>
     </div>
     <div class="domain">therealleadville2026course.com &nbsp;·&nbsp; unofficial fan project</div>
   </div>
