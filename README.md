@@ -97,8 +97,8 @@ every filtering threshold:
 
 Agreement is close on the climbs and loose on the flats: six of the seven legs with over
 1,000 ft of gain match the official figures within 6.2%, while legs under 200 ft of gain can
-differ by tens of feet in either direction (the 208 ft leg into Turquoise Lake Dam reads
-135 ft measured). The seventh big leg, outbound into Twin Lakes, is off by 16.6% — it is the
+differ by tens of feet in either direction (the 214 ft leg into Turquoise Lake Dam reads
+141 ft measured). The seventh big leg, outbound into Twin Lakes, is off by 16.6% — it is the
 leg the August revision re-drew, so its shared-ground matching changed with it.
 
 Two corrections are applied before any lookup, and both are required:
@@ -142,15 +142,19 @@ the Route GPX and cuesheet CSV from the route page whenever the route itself cha
   2025, by 208 ft on the terrain model and about 660 ft measured. De-drifting the 2025
   recording moves its own total by only 26 ft (13,665 → 13,691), so it
   is left as published. Both 2026 figures are reproducible from the matching GPX download.
-- Aid-station miles, cutoffs, and crew info come from the 2026 Run Course tab on
-  leadvilleraceseries.com (fetched 2026-08-14). Drop bags go to five on-course locations —
-  Turquoise Dam, Outward Bound, Half Pipe, Twin Lakes and Winfield.
-- The station the chart first called "Pipeline" is named **Half Pipe** on the site as of
-  2026-08-18, matching the drop-bag list. Because that is also the name of the 2025
-  course's aid station, the stop is now anchored to that physical location (the 2026 line
-  passes 18 m from it) instead of being interpolated from chart mileage. It moves ~1.2 mi
-  south of where the interpolation had put it, to 39.1632, -106.3689 at 9,810 ft, and its
-  GPX leg distances then disagree with the chart's (4.8 mi from Outward Bound where the
-  chart says 3.6, 8.4 mi on to Twin Lakes where the chart says 10.9) — the table shows
-  both columns, and the chart's own mileage is planning-grade throughout.
+- Aid-station names, miles, cutoffs, and crew info come from the 2026 Run Course tab on
+  leadvilleraceseries.com (station list and mileage as of 2026-08-18). Drop bags go to five
+  on-course locations — Turquoise Dam, Outward Bound, Half Pipe, Twin Lakes and Winfield.
+- The stop first published as "Pipeline" at mile 29.6/75.1 is now **Half Pipe** at
+  31.8/72.8, matching its drop-bag list and the 2025 course's name for the same aid.
+  Sharing that name gave it a physical anchor — the 2026 line passes 18 m from the 2025
+  Half Pipe — so it is snapped there like every other named stop instead of being
+  interpolated from chart mileage, at 39.1632, -106.3689, 9,810 ft. The two sources were
+  derived independently and agree to 0.1 mi outbound and 0.2 mi inbound, which is the
+  closest check available on any station's placement.
+- Chart mileage and GPX mileage still part company either side of Outward Bound: the chart
+  makes Outward Bound ↔ Half Pipe 5.8 mi out and 5.9 mi back where the track measures 4.8,
+  the largest remaining leg disagreement. The aid table prints the GPX figure alongside the
+  chart's wherever the two differ by half a mile or more.
+- Carter Summit is listed as a *mini* aid ("Carter Summit Mini Aid"), at mile 10.6.
 - Map tiles: CARTO / OpenStreetMap (network required when viewing).

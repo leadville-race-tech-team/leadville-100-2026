@@ -718,11 +718,11 @@
     <sym>End</sym>
     <type>cue</type>
   </wpt>
-  <wpt lat="39.28529" lon="-106.40216">
-    <ele>3295.4</ele>
-    <name>Carter Summit</name>
-    <cmt>aid station, chart miles 10.0 mi</cmt>
-    <desc>aid station. chart miles 10.0 mi. no crew access. source: leadvilleraceseries.com 2026 run course chart, not the ridewithgps export, which contains no pois.</desc>
+  <wpt lat="39.28368" lon="-106.40792">
+    <ele>3255.4</ele>
+    <name>Carter Summit Mini Aid</name>
+    <cmt>aid station, chart miles 10.6 mi</cmt>
+    <desc>aid station. chart miles 10.6 mi. no crew access. source: leadvilleraceseries.com 2026 run course chart, not the ridewithgps export, which contains no pois.</desc>
     <sym>Aid Station</sym>
     <type>poi</type>
   </wpt>
@@ -745,8 +745,8 @@
   <wpt lat="39.16323" lon="-106.36889">
     <ele>2989.7</ele>
     <name>Half Pipe</name>
-    <cmt>aid station, chart miles 29.6 mi, 75.1 mi</cmt>
-    <desc>aid station. chart miles 29.6 mi, 75.1 mi. cutoffs 12:45 PM, 2:00 AM Sun. crew access. drop bags. source: leadvilleraceseries.com 2026 run course chart, not the ridewithgps export, which contains no pois.</desc>
+    <cmt>aid station, chart miles 31.8 mi, 72.8 mi</cmt>
+    <desc>aid station. chart miles 31.8 mi, 72.8 mi. cutoffs 12:45 PM, 2:00 AM Sun. crew access. drop bags. source: leadvilleraceseries.com 2026 run course chart, not the ridewithgps export, which contains no pois.</desc>
     <sym>Aid Station</sym>
     <type>poi</type>
   </wpt>
