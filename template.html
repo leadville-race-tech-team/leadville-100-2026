@@ -352,7 +352,7 @@
     that drift as climb that never happened. With that done the barometer reads 450&nbsp;ft
     <i>less</i> gain than the terrain model, and stays below it at every filtering threshold. Treat the
     individual totals as method-dependent, and the Measured pairing as the one to compare years with. Shared sections are drawn once, following the 2026 line. “Changed” = farther than ~70&nbsp;m from every point of the other year’s track, for at least a quarter mile.</p>
-    <p>Aid-station miles, cutoffs and crew access are from the <b>2026 Run Course</b> tab on leadvilleraceseries.com (fetched Aug&nbsp;14,&nbsp;2026): 12 stations, and crewing is allowed only at Outward Bound, Pipeline and Twin Lakes Village (each visited twice; Twin Lakes is shuttle-access only from Outward Bound). Cutoff times without a day are Saturday; the course cutoff is 30 hours. Drop bags go to <b>five on-course locations</b>: Turquoise Dam, Outward Bound, Half&nbsp;Pipe, Twin Lakes and Winfield — marked 🎒 on the map and ✓ in the table. “Half Pipe” is the drop-bag list’s name for the station the 2026 course chart calls <b>Pipeline</b>; the separate grey “Half Pipe” dot on the map is the old 2025 landmark, about a mile south. Carter Summit and Hope Pass take no drop bags.</p>
+    <p>Aid-station miles, cutoffs and crew access are from the <b>2026 Run Course</b> tab on leadvilleraceseries.com (fetched Aug&nbsp;14,&nbsp;2026): 12 stations, and crewing is allowed only at Outward Bound, Half&nbsp;Pipe and Twin Lakes Village (each visited twice; Twin Lakes is shuttle-access only from Outward Bound). Cutoff times without a day are Saturday; the course cutoff is 30 hours. Drop bags go to <b>five on-course locations</b>: Turquoise Dam, Outward Bound, Half&nbsp;Pipe, Twin Lakes and Winfield — marked 🎒 on the map and ✓ in the table. Carter Summit and Hope Pass take no drop bags. The station the chart first listed as <b>Pipeline</b> is named <b>Half&nbsp;Pipe</b> on the site as of Aug&nbsp;18, matching the drop-bag list — so it is placed at the 2025 course’s Half Pipe aid, which the 2026 line passes 18&nbsp;m from, rather than at the point chart mileage would interpolate about a mile north. The four legs either side of it are then the only ones where chart and GPX distance differ by more than a mile.</p>
   </footer>
 </div>
 <div class="tooltip" id="tip"></div>
@@ -583,7 +583,7 @@ function rebuild() {
   }
   // 4: landmarks (aid-station locations are drawn as aid markers below instead)
   const LM_DIR = {"Turquoise Lake Dam": "bottom", "Turquoise Lake north shore": "bottom", "May Queen": "left", "Sugarloaf / Powerline": "bottom", "Winfield": "bottom", "Carter Summit": "top"};
-  const AID_NAMES = new Set(["Outward Bound", "Twin Lakes", "Hope Pass", "Winfield (turnaround)", "Turquoise Lake Dam"]);
+  const AID_NAMES = new Set(["Outward Bound", "Half Pipe", "Twin Lakes", "Hope Pass", "Winfield (turnaround)", "Turquoise Lake Dam"]);
   for (const lm of DATA.landmarks) {
     if (AID_NAMES.has(lm.name)) continue;
     if (lm.name === "Start / Finish") { addStartFinish(lm); continue; }
@@ -820,7 +820,7 @@ function buildAidTable() {
   document.getElementById("aidNote").innerHTML = eleMode === "measured"
     ? `Gain, loss and elevation are barometric, from the 2025 run, de-drifted and locked to one pass
        per section. Six of the seven legs carrying over 1,000&nbsp;ft of climb agree with the official
-       figures within <b>6.2%</b>. The seventh is the outbound leg into Twin Lakes, off by 15%: that is
+       figures within <b>6.2%</b>. The seventh is the outbound leg into Twin Lakes, off by 17%: that is
        the leg the 2026 route re-drew in August, so the barometric ground under it changed too.
        Legs that barely climb are a different matter: their totals are small enough that either source
        can differ by tens of feet, so read those as approximate — the 208&nbsp;ft official figure into
@@ -873,7 +873,7 @@ function drawProfile() {
     s += `<text x="${x(units === "metric" ? v / KM_PER_MI : v)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="${css("--muted")}" style="font-variant-numeric:tabular-nums">${v}</text>`;
   }
   s += `<line x1="${M.l}" x2="${W - M.r}" y1="${yv(lo)}" y2="${yv(lo)}" stroke="${css("--baseline")}" stroke-width="1"/>`;
-  const AID_CODE = {"Carter Summit": "CS", "Turquoise Lake Dam": "TD", "Outward Bound": "OB", "Pipeline": "PL", "Twin Lakes Village": "TL", "Hope Pass": "HO", "Winfield": "WF"};
+  const AID_CODE = {"Carter Summit": "CS", "Turquoise Lake Dam": "TD", "Outward Bound": "OB", "Half Pipe": "HP", "Twin Lakes Village": "TL", "Hope Pass": "HO", "Winfield": "WF"};
   for (const seg of DATA.aid.segments) {
     const code = AID_CODE[seg.to];
     if (!code) continue;

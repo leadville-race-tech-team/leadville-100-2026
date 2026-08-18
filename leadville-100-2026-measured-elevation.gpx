@@ -742,9 +742,9 @@
     <sym>Aid Station</sym>
     <type>poi</type>
   </wpt>
-  <wpt lat="39.18132" lon="-106.36773">
-    <ele>2938.8</ele>
-    <name>Pipeline</name>
+  <wpt lat="39.16323" lon="-106.36889">
+    <ele>2989.7</ele>
+    <name>Half Pipe</name>
     <cmt>aid station, chart miles 29.6 mi, 75.1 mi</cmt>
     <desc>aid station. chart miles 29.6 mi, 75.1 mi. cutoffs 12:45 PM, 2:00 AM Sun. crew access. drop bags. source: leadvilleraceseries.com 2026 run course chart, not the ridewithgps export, which contains no pois.</desc>
     <sym>Aid Station</sym>

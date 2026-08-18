@@ -212,23 +212,26 @@ def gain_loss_ft(pts, thr=THR):
     return g * 3.28084, l * 3.28084
 
 # Official 2026 aid-station chart (leadvilleraceseries.com "2026 Run Course" tab,
-# fetched 2026-08-14): 12 stations. Crew is allowed ONLY at Outward Bound, Pipeline
+# fetched 2026-08-14): 12 stations. Crew is allowed ONLY at Outward Bound, Half Pipe
 # and Twin Lakes Village (each visited twice). Drop bags go to five on-course
 # locations for 2026: Turquoise Dam, Outward Bound, Half Pipe, Twin Lakes and
-# Winfield. "Half Pipe" is the drop-bag list's name for the Pipeline station on the
-# 2026 chart; Carter Summit and Hope Pass take no drop bags.
+# Winfield; Carter Summit and Hope Pass take no drop bags.
+# The station this chart first listed as "Pipeline" is now named "Half Pipe" on the
+# site (as it already was on the drop-bag list), which makes it the same name as the
+# 2025 course's Half Pipe aid — so it is anchored to that physical location like the
+# other named stops, instead of being interpolated from chart mileage.
 AID_STOPS = [
     {"name": "Start (6th & Harrison)", "loc": "Start / Finish", "mile": 0.0, "cutoff": None, "crew": None, "drop": None},
     {"name": "Carter Summit", "loc": "Carter Summit", "leg": "out", "mile": 10.0, "cutoff": None, "crew": False, "drop": False},
     {"name": "Turquoise Lake Dam", "loc": "Turquoise Lake Dam", "leg": "out", "mile": 20.5, "cutoff": "10:15 AM", "crew": False, "drop": True},
     {"name": "Outward Bound", "loc": "Outward Bound", "leg": "out", "mile": 26.0, "cutoff": "11:15 AM", "crew": True, "drop": True},
-    {"name": "Pipeline", "loc": "Pipeline", "leg": "out", "mile": 29.6, "cutoff": "12:45 PM", "crew": True, "drop": True},
+    {"name": "Half Pipe", "loc": "Half Pipe", "leg": "out", "mile": 29.6, "cutoff": "12:45 PM", "crew": True, "drop": True},
     {"name": "Twin Lakes Village", "loc": "Twin Lakes", "leg": "out", "mile": 40.5, "cutoff": "2:15 PM", "crew": True, "drop": True},
     {"name": "Hope Pass", "loc": "Hope Pass", "leg": "out", "mile": 45.6, "cutoff": "4:45 PM", "crew": False, "drop": False},
     {"name": "Winfield", "loc": "Winfield", "leg": "turn", "mile": 52.3, "cutoff": "6:50 PM", "crew": False, "drop": True},
     {"name": "Hope Pass", "loc": "Hope Pass", "leg": "in", "mile": 59.1, "cutoff": None, "crew": False, "drop": False},
     {"name": "Twin Lakes Village", "loc": "Twin Lakes", "leg": "in", "mile": 64.2, "cutoff": "11:00 PM", "crew": True, "drop": True},
-    {"name": "Pipeline", "loc": "Pipeline", "leg": "in", "mile": 75.1, "cutoff": "2:00 AM Sun", "crew": True, "drop": True},
+    {"name": "Half Pipe", "loc": "Half Pipe", "leg": "in", "mile": 75.1, "cutoff": "2:00 AM Sun", "crew": True, "drop": True},
     {"name": "Outward Bound", "loc": "Outward Bound", "leg": "in", "mile": 78.7, "cutoff": "3:45 AM Sun", "crew": True, "drop": True},
     {"name": "Turquoise Lake Dam", "loc": "Turquoise Lake Dam", "leg": "in", "mile": 84.2, "cutoff": "5:30 AM Sun", "crew": False, "drop": True},
     {"name": "Finish (6th & Harrison)", "loc": "Start / Finish", "mile": 100.0, "cutoff": "10:00 AM Sun (30 h)", "crew": None, "drop": None},
@@ -248,6 +251,7 @@ def aid_data(p26, dist26, marks, stats_ele=None):
     anchors = {
         "Turquoise Lake Dam": lm["Turquoise Lake Dam"],
         "Outward Bound": lm["Outward Bound"],
+        "Half Pipe": lm["Half Pipe"],
         "Twin Lakes": lm["Twin Lakes"],
         "Winfield": lm["Winfield (turnaround)"],
     }
@@ -281,7 +285,7 @@ def aid_data(p26, dist26, marks, stats_ele=None):
         return j, False
 
     snapped = [snap(s) for s in AID_STOPS]
-    # resolve anchor-less stops (Carter Summit, Pipeline) by interpolating GPX
+    # resolve anchor-less stops (Carter Summit) by interpolating GPX
     # distance between the surrounding snapped stops' (chart mile, gpx meters) pairs
     ctrl = [(AID_STOPS[k]["mile"], dist26[snapped[k][0]]) for k in range(len(AID_STOPS)) if snapped[k][0] is not None]
     def interp_idx(mile):
